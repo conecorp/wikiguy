@@ -304,6 +304,11 @@ client.on("interactionCreate", async (interaction) => {
         const wikiKey = interaction.options.getString('wiki');
         const wikiConfig = WIKIS[wikiKey];
 
+        if (!wikiConfig) {
+           await interaction.reply({ content: 'Unknown wiki selection.', ephemeral: true });
+           return;
+        }
+        
         await interaction.deferReply();
         const result = await getContributionScores(wikiConfig);
 
