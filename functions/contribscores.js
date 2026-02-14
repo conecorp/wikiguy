@@ -1,16 +1,6 @@
 const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
-const { WIKI_ENDPOINTS } = require("../config.js");
 
-const contributionScoresTool = {
-    name: "getContributionScores",
-    description: "Retrieves the current leaderboard of top 10 contributors to the wiki, including their scores and edit counts. Use this when the user asks for 'top editors', 'leaderboard', 'who edits the most', etc.",
-    parameters: {
-        type: "OBJECT",
-        properties: {}, // No parameters required
-    },
-};
-
-async function getContributionScores() {
+async function getContributionScores(wikiConfig) {
     try {
         const params = new URLSearchParams({
             action: "parse",
@@ -20,7 +10,7 @@ async function getContributionScores() {
             disablelimitreport: "true"
         });
 
-        const url = `${WIKI_ENDPOINTS.API}?${params.toString()}`;
+        const url = `${wikiConfig.apiEndpoint}?${params.toString()}`;
         const res = await fetch(url, { headers: { "User-Agent": "DiscordBot/Derivative" } });
         const json = await res.json();
         const html = json.parse?.text?.["*"];
@@ -31,7 +21,7 @@ async function getContributionScores() {
         const rows = html.split('<tr class="">');
         rows.shift(); // Remove header
 
-        let dataSummary = "TOP 10 CONTRIBUTORS DATA:\n";
+        let dataSummary = `TOP 10 CONTRIBUTORS DATA FOR ${wikiConfig.name}:\n`;
         rows.forEach((row, i) => {
             const user = row.match(/<bdi>(.*?)<\/bdi>/)?.[1] || "Unknown";
             const stats = [...row.matchAll(/>([\d,]+)\s*<\/td>/g)];
@@ -47,4 +37,4 @@ async function getContributionScores() {
     }
 }
 
-module.exports = { getContributionScores, contributionScoresTool };
+module.exports = { getContributionScores };
