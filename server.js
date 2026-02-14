@@ -6,7 +6,7 @@ app.get('/', (req, res) => {
   res.send(`
     <html>
       <head>
-        <title>Shitheads up!</title>
+        <title>Orbital is orbiting</title>
         <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
@@ -15,10 +15,8 @@ app.get('/', (req, res) => {
         </style>
       </head>
       <body>
-        <h1>Derivative Discord Bot</h1>
-        <p>Bot is running and ready to chat!</p>
-        <p>Invite the bot to your Discord server to start using it.</p>
-                <p>Please visit <a href="https://shitheads.instatus.com"><b>shitheads.instatus.com</b></a> instead. Why are you here, actually?</p>
+        <h1>Orbital Discord Bot</h1>
+        <p>Bot is running.</p>
       </body>
     </html>
   `);
@@ -27,7 +25,7 @@ app.get('/', (req, res) => {
 app.get('/status', (req, res) => {
   res.json({
     status: 'online',
-    bot: 'Garfield Discord Bot',
+    bot: 'Orbital Discord Bot',
     timestamp: new Date().toISOString()
   });
 });

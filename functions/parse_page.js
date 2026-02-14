@@ -1,12 +1,6 @@
 const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const cheerio = require('cheerio');
 
-const { WIKI_ENDPOINTS } = require("../config.js");
-const API = WIKI_ENDPOINTS.API;
-
-let knownPages = [];
-let pageLookup = new Map();
-
 // --- UTILITIES ---
 function htmlToMarkdown(html, baseUrl) {
     if (!html) return "";
@@ -79,128 +73,11 @@ function htmlToMarkdown(html, baseUrl) {
 }
 
 // --- WIKI API FUNCTIONS ---
-async function getAllNamespaces() {
-    try {
-        const params = new URLSearchParams({
-            action: "query",
-            meta: "siteinfo",
-            siprop: "namespaces",
-            format: "json"
-        });
-        const res = await fetch(`${API}?${params.toString()}`, {
-            headers: { "User-Agent": "DiscordBot/Derivative" }
-        });
-        if (!res.ok) throw new Error(`Namespaces fetch failed: ${res.status}`);
-        const json = await res.json();
-        const nsObj = json.query?.namespaces || {};
 
-        const includeNs = Object.entries(nsObj)
-            .map(([k, v]) => {
-                const id = parseInt(k, 10);
-                const name = (v && (v["*"] || v.canonical || "")).toString().trim();
-                return { id, name };
-            })
-            .filter(({ id, name }) => {
-                if (Number.isNaN(id) || id < 0) return false; 
-                const lower = name.toLowerCase();
-                if (lower.includes("talk")) return false;
-                if (/^user\b/i.test(name) || /\buser\b/i.test(name)) return false;
-                if (/^file\b/i.test(name) || /\bfile\b/i.test(name)) return false;
-                return true;
-            })
-            .map(o => o.id);
-
-        if (!includeNs.length) return [0, 4];
-
-        return includeNs;
-    } catch (err) {
-        console.error("Failed to fetch namespaces:", err.message || err);
-        return [0, 4];
-    }
-}
-
-async function getAllPages() {
-    const pages = [];
-    try {
-        const namespaces = await getAllNamespaces();
-
-        for (const ns of namespaces) {
-            let apcontinue = null;
-            do {
-                const params = new URLSearchParams({
-                    action: "query",
-                    format: "json",
-                    list: "allpages",
-                    aplimit: "max",
-                    apfilterredir: "nonredirects",
-                    apnamespace: String(ns),
-                });
-                if (apcontinue) params.append("apcontinue", apcontinue);
-
-                const url = `${API}?${params.toString()}`;
-                const res = await fetch(url, {
-                    headers: { "User-Agent": "DiscordBot/Derivative" }
-                });
-                if (!res.ok) throw new Error(`Failed: ${res.status} ${res.statusText}`);
-                const json = await res.json();
-
-                if (json?.query?.allpages?.length) {
-                    pages.push(...json.query.allpages.map(p => p.title));
-                }
-
-                apcontinue = json.continue?.apcontinue || null;
-            } while (apcontinue);
-        }
-
-        return [...new Set(pages)];
-    } catch (err) {
-        console.error("getAllPages error:", err.message || err);
-        return [...new Set(pages)]; 
-    }
-}
-
-async function loadPages() {
-    try {
-        console.log("Loading all wiki pages...");
-
-        const newPages = await getAllPages();
-        // Modify array in-place so conversation.js sees the updates
-        knownPages.length = 0; 
-        knownPages.push(...newPages);
-        
-        pageLookup = new Map();
-        for (const title of knownPages) {
-            const canonical = title; 
-            const norm1 = title.toLowerCase(); 
-            const norm2 = title.replace(/_/g, " ").toLowerCase(); 
-            pageLookup.set(norm1, canonical);
-            pageLookup.set(norm2, canonical);
-        }
-        console.log(`Loaded ${knownPages.length} wiki pages.`);
-    } catch (err) {
-        console.error("Wiki load failed:", err.message);
-    }
-}
-
-async function findCanonicalTitle(input) {
+async function findCanonicalTitle(input, wikiConfig) {
     if (!input) return null;
     const raw = String(input).trim();
     const norm = raw.replace(/_/g, " ").replace(/\s+/g, " ").trim();
-    const lower = raw.toLowerCase();
-    const lowerNorm = norm.toLowerCase();
-
-    if (pageLookup.has(lower)) return pageLookup.get(lower);
-    if (pageLookup.has(lowerNorm)) return pageLookup.get(lowerNorm);
-
-    if (norm.includes(":")) {
-        const parts = norm.split(":").map((seg, i) =>
-            i === 0
-                ? seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase()
-                : seg.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join("_")
-        );
-        const alt = parts.join(":"); 
-        if (pageLookup.has(alt.toLowerCase())) return pageLookup.get(alt.toLowerCase());
-    }
 
     try {
         const titleTryVariants = [
@@ -217,7 +94,7 @@ async function findCanonicalTitle(input) {
                 redirects: "1",
                 indexpageids: "1"
             });
-            const res = await fetch(`${API}?${params.toString()}`, { headers: { "User-Agent": "DiscordBot/Derivative" } });
+            const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, { headers: { "User-Agent": "DiscordBot/Orbital" } });
             if (!res.ok) continue;
             const json = await res.json();
 
@@ -237,10 +114,6 @@ async function findCanonicalTitle(input) {
 
             if (fragment) canonicalTitle = `${canonicalTitle}#${fragment}`;
 
-            pageLookup.set(page.title.toLowerCase(), page.title);
-            pageLookup.set(page.title.replace(/_/g, " ").toLowerCase(), page.title);
-            pageLookup.set((canonicalTitle).toLowerCase(), canonicalTitle);
-
             return canonicalTitle;
         }
     } catch (err) {
@@ -250,7 +123,7 @@ async function findCanonicalTitle(input) {
     return null;
 }
 
-async function getWikiContent(pageTitle) {
+async function getWikiContent(pageTitle, wikiConfig) {
     const params = new URLSearchParams({
         action: "parse",
         page: pageTitle,
@@ -259,10 +132,10 @@ async function getWikiContent(pageTitle) {
     });
 
     try {
-        const res = await fetch(`${API}?${params.toString()}`, {
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
             headers: {
-                "User-Agent": "DiscordBot/Derivative",
-                "Origin": WIKI_ENDPOINTS.BASE,
+                "User-Agent": "DiscordBot/Orbital",
+                "Origin": wikiConfig.baseUrl,
             },
         });
 
@@ -270,7 +143,7 @@ async function getWikiContent(pageTitle) {
         const json = await res.json();
 
         if (json?.parse?.text?.["*"]) {
-            return htmlToMarkdown(json.parse.text["*"], WIKI_ENDPOINTS.BASE);
+            return htmlToMarkdown(json.parse.text["*"], wikiConfig.baseUrl);
         }
         return null;
     } catch (err) {
@@ -279,8 +152,8 @@ async function getWikiContent(pageTitle) {
     }
 }
 
-async function getSectionIndex(pageTitle, sectionName) {
-    const canonical = await findCanonicalTitle(pageTitle) || pageTitle;
+async function getSectionIndex(pageTitle, sectionName, wikiConfig) {
+    const canonical = await findCanonicalTitle(pageTitle, wikiConfig) || pageTitle;
     const params = new URLSearchParams({
         action: "parse",
         format: "json",
@@ -289,8 +162,8 @@ async function getSectionIndex(pageTitle, sectionName) {
     });
 
     try {
-        const res = await fetch(`${API}?${params}`, {
-            headers: { "User-Agent": "DiscordBot/Derivative" }
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params}`, {
+            headers: { "User-Agent": "DiscordBot/Orbital" }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         const json = await res.json();
@@ -309,8 +182,8 @@ async function getSectionIndex(pageTitle, sectionName) {
     }
 }
 
-async function getSectionContent(pageTitle, sectionName) {
-    const sectionIndex = await getSectionIndex(pageTitle, sectionName);
+async function getSectionContent(pageTitle, sectionName, wikiConfig) {
+    const sectionIndex = await getSectionIndex(pageTitle, sectionName, wikiConfig);
     if (!sectionIndex) {
         console.warn(`Section "${sectionName}" not found in "${pageTitle}"`);
         return null;
@@ -325,21 +198,21 @@ async function getSectionContent(pageTitle, sectionName) {
     });
 
     try {
-        const res = await fetch(`${API}?${params}`, {
-            headers: { "User-Agent": "DiscordBot/Derivative" }
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params}`, {
+            headers: { "User-Agent": "DiscordBot/Orbital" }
         });
         const json = await res.json();
 
         const html = json.parse?.text?.["*"];
         if (!html) return null;
-        return htmlToMarkdown(html, WIKI_ENDPOINTS.BASE);
+        return htmlToMarkdown(html, wikiConfig.baseUrl);
     } catch (err) {
         console.error(`Failed to fetch section content for "${pageTitle}#${sectionName}":`, err.message);
         return null;
     }
 }
 
-async function getLeadSection(pageTitle) {
+async function getLeadSection(pageTitle, wikiConfig) {
     const params = new URLSearchParams({
         action: "query",
         prop: "extracts",
@@ -350,8 +223,8 @@ async function getLeadSection(pageTitle) {
     });
 
     try {
-        const res = await fetch(`${API}?${params.toString()}`, {
-            headers: { "User-Agent": "DiscordBot/Derivative" }
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
+            headers: { "User-Agent": "DiscordBot/Orbital" }
         });
         const json = await res.json();
         const pages = json.query?.pages;
@@ -359,14 +232,14 @@ async function getLeadSection(pageTitle) {
         const page = Object.values(pages)[0];
         const html = page?.extract;
         if (!html) return null;
-        return htmlToMarkdown(html, WIKI_ENDPOINTS.BASE);
+        return htmlToMarkdown(html, wikiConfig.baseUrl);
     } catch (err) {
         console.error(`Failed to fetch lead section for "${pageTitle}":`, err.message);
         return null;
     }
 }
 
-async function parseWikiLinks(text) {
+async function parseWikiLinks(text, wikiConfig) {
     const regex = /\[\[([^[\]|]+)(?:\|([^[\]]+))?\]\]/g;
     const matches = [];
     let match;
@@ -382,7 +255,7 @@ async function parseWikiLinks(text) {
 
     const processed = await Promise.all(matches.map(async m => {
         const display = m.label || m.page;
-        const canonical = await findCanonicalTitle(m.page) || m.page;
+        const canonical = await findCanonicalTitle(m.page, wikiConfig) || m.page;
 
         let pageOnly = canonical;
         let fragment = null;
@@ -393,7 +266,7 @@ async function parseWikiLinks(text) {
 
         const parts = pageOnly.split(':').map(seg => encodeURIComponent(seg.replace(/ /g, "_")));
         const anchor = fragment ? `#${encodeURIComponent(fragment.replace(/ /g, "_"))}` : '';
-        const url = `<${WIKI_ENDPOINTS.ARTICLE_PATH}${parts.join(':')}${anchor}>`;
+        const url = `<${wikiConfig.articlePath}${parts.join(':')}${anchor}>`;
 
         return { index: m.index, length: m.length, replacement: `[**${display}**](${url})` };
     }));
@@ -406,7 +279,7 @@ async function parseWikiLinks(text) {
     return res;
 }
 
-async function parseTemplates(text) {
+async function parseTemplates(text, wikiConfig) {
     const regex = /\{\{([^{}|]+)(?:\|([^{}]*))?\}\}/g;
     const matches = [];
     let match;
@@ -425,7 +298,7 @@ async function parseTemplates(text) {
         const { fullMatch, templateName, param, index, length } = m;
         let replacement = fullMatch; 
 
-        const canonical = await findCanonicalTitle(templateName);
+        const canonical = await findCanonicalTitle(templateName, wikiConfig);
         if (!canonical) {
             return { index, length, replacement: "I don't know." };
         }
@@ -440,9 +313,9 @@ async function parseTemplates(text) {
         let wikiText = null;
         try {
             if (fragment) {
-                wikiText = await getSectionContent(pageOnly, fragment);
+                wikiText = await getSectionContent(pageOnly, fragment, wikiConfig);
             } else {
-                wikiText = await getLeadSection(pageOnly);
+                wikiText = await getLeadSection(pageOnly, wikiConfig);
             }
         } catch (err) {
             wikiText = null;
@@ -451,7 +324,7 @@ async function parseTemplates(text) {
         if (wikiText) {
             const parts = pageOnly.split(':').map(seg => encodeURIComponent(seg.replace(/ /g, "_")));
             const anchor = fragment ? `#${encodeURIComponent(fragment.replace(/ /g, "_"))}` : '';
-            const link = `<${WIKI_ENDPOINTS.ARTICLE_PATH}${parts.join(':')}${anchor}>`;
+            const link = `<${wikiConfig.articlePath}${parts.join(':')}${anchor}>`;
 
             replacement = `**${templateName}** → ${wikiText.slice(0,1000)}\n${link}`;
         } else {
@@ -470,43 +343,11 @@ async function parseTemplates(text) {
     return result;
 }
 
-async function performSearch(query) {
-    const params = new URLSearchParams({
-        action: "query",
-        list: "search",
-        srsearch: query,
-        format: "json"
-    });
-
-    try {
-        const res = await fetch(`${API}?${params.toString()}`, {
-            headers: { "User-Agent": "DiscordBot/Derivative" }
-        });
-        
-        if (!res.ok) throw new Error("Search failed");
-        
-        const json = await res.json();
-        const results = json.query?.search || [];
-        
-        if (results.length === 0) return "No results found.";
-
-        // Return a list of titles
-        return results.map(r => r.title).join(", ");
-    } catch (err) {
-        console.error("Search API error:", err);
-        return "Error searching wiki.";
-    }
-}
-
 module.exports = { 
-    API, 
-    knownPages, 
-    loadPages, 
     findCanonicalTitle, 
     getWikiContent, 
     getSectionContent, 
     getLeadSection, 
     parseWikiLinks, 
-    parseTemplates,
-    performSearch
+    parseTemplates
 };
