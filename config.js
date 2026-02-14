@@ -26,9 +26,9 @@ const WIKIS = {
 };
 
 const CATEGORY_WIKI_MAP = {
-    "Super Blox 64": "super-blox-64",
-    "Superstar Racers": "superstar-racers",
-    "A Block's Journey": "a-blocks-journey"
+    "123456789012345678": "super-blox-64",   // Replace with actual Category ID
+    "876543210987654321": "superstar-racers", // Replace with actual Category ID
+    "112233445566778899": "a-blocks-journey"  // Replace with actual Category ID
 };
 
 // --- DISCORD STATUSES ---

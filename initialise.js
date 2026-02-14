@@ -282,10 +282,13 @@ client.on("messageCreate", async (message) => {
     else if (match[5]) wikiConfig = WIKIS["a-blocks-journey"];
     else if (match[1] || match[2]) {
         // {{}} or [[]] - Use category mapping
-        const categoryName = message.channel.parent?.name;
-        const wikiKey = CATEGORY_WIKI_MAP[categoryName];
+        const categoryId = message.channel.parentId;
+        const wikiKey = CATEGORY_WIKI_MAP[categoryId];
         if (wikiKey) {
             wikiConfig = WIKIS[wikiKey];
+        } else {
+            // Fallback to Superstar Racers if not in a listed category
+            wikiConfig = WIKIS["superstar-racers"];
         }
     }
 
