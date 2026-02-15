@@ -7,6 +7,7 @@ const WIKIS = {
         baseUrl: "https://superblox64.wiki",
         apiEndpoint: "https://superblox64.wiki/w/api.php",
         articlePath: "https://superblox64.wiki/",
+        syntax: "sb64",
         emoji: "1472436401680158741"
     },
     "superstar-racers": {
@@ -14,6 +15,7 @@ const WIKIS = {
         baseUrl: "https://superstarracers.wiki",
         apiEndpoint: "https://superstarracers.wiki/w/api.php",
         articlePath: "https://superstarracers.wiki/",
+        syntax: "sr",
         emoji: "1472436382998728714"
     },
     "a-blocks-journey": {
@@ -21,6 +23,7 @@ const WIKIS = {
         baseUrl: "https://ablocksjourney.wiki",
         apiEndpoint: "https://ablocksjourney.wiki/w/api.php",
         articlePath: "https://ablocksjourney.wiki/",
+        syntax: "abj",
         emoji: "1472436415760568460"
     }
 };
