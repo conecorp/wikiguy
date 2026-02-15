@@ -17,6 +17,8 @@ const {
     ContainerBuilder,
     SectionBuilder,
     TextDisplayBuilder,
+    MediaGalleryBuilder,
+    MediaGalleryItemBuilder,
     ButtonBuilder,
     ButtonStyle,
     ActionRowBuilder,
@@ -70,25 +72,43 @@ function splitMessage(text, maxLength = DISCORD_MAX_LENGTH) {
 }
 
 // --- NEW: UNIFIED COMPONENT BUILDER ---
-function buildPageEmbed(title, content, imageUrl, wikiConfig) {
+function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
     const container = new ContainerBuilder();
     
-    const showEmbed = content && content !== "No content available.";
+    const hasContent = content && content !== "No content available.";
+    const hasGallery = gallery && gallery.length > 0;
+    const showEmbed = hasContent || hasGallery;
 
     if (showEmbed) {
         const mainSection = new SectionBuilder();
 
         // 1. Text Content
-        mainSection.addTextDisplayComponents([new TextDisplayBuilder().setContent(content)]);
+        if (hasContent) {
+            mainSection.addTextDisplayComponents([new TextDisplayBuilder().setContent(content)]);
+        }
 
-        // 2. Image (Thumbnail)
-        const fallbackImage = "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png";
-        const finalImageUrl = (typeof imageUrl === "string" && imageUrl.trim() !== "") ? imageUrl : fallbackImage;
+        // 2. Media (Gallery or Thumbnail)
+        if (hasGallery) {
+            const mediaGallery = new MediaGalleryBuilder();
+            // Discord limits to 10 items
+            gallery.slice(0, 10).forEach(item => {
+                const galleryItem = new MediaGalleryItemBuilder()
+                    .setURL(item.url);
+                if (item.caption) {
+                    galleryItem.setDescription(item.caption.slice(0, 1000));
+                }
+                mediaGallery.addItems(galleryItem);
+            });
+            mainSection.addComponents(mediaGallery);
+        } else {
+            const fallbackImage = "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png";
+            const finalImageUrl = (typeof imageUrl === "string" && imageUrl.trim() !== "") ? imageUrl : fallbackImage;
 
-        try {
-            mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
-        } catch (err) {
-            console.warn("Failed to set thumbnail:", err.message);
+            try {
+                mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
+            } catch (err) {
+                console.warn("Failed to set thumbnail:", err.message);
+            }
         }
 
         if (mainSection.components && mainSection.components.length > 0) {
@@ -106,7 +126,8 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig) {
             if (title === "Special:ContributionScores") {
                 pageUrl = `${wikiConfig.articlePath}Special:ContributionScores`;
             } else {
-                const [pageOnly, frag] = String(title).split("#");
+                const isSectionLink = String(title).includes(" § ");
+                const [pageOnly, frag] = isSectionLink ? String(title).split(" § ") : String(title).split("#");
                 const parts = pageOnly.split(':').map(s => encodeURIComponent(s.replace(/ /g, "_")));
                 const anchor = frag ? '#' + encodeURIComponent(frag.replace(/ /g, '_')) : '';
                 pageUrl = `${wikiConfig.articlePath}${parts.join(':')}${anchor}`;
@@ -236,10 +257,18 @@ async function handleUserRequest(wikiConfig, rawUserMsg, messageOrInteraction) {
         if (canonical) {
             let content = null;
             let displayTitle = canonical;
+            let gallery = null;
 
             if (sectionName) {
-                content = await getSectionContent(canonical, sectionName, wikiConfig);
-                displayTitle = `${canonical}#${sectionName}`;
+                const sectionData = await getSectionContent(canonical, sectionName, wikiConfig);
+                if (sectionData) {
+                    content = sectionData.content;
+                    displayTitle = `${canonical} § ${sectionData.displayTitle}`;
+                    gallery = sectionData.gallery;
+                } else {
+                    content = "No content available.";
+                    displayTitle = `${canonical}#${sectionName}`;
+                }
             } else {
                 content = await getLeadSection(canonical, wikiConfig);
             }
@@ -262,7 +291,7 @@ async function handleUserRequest(wikiConfig, rawUserMsg, messageOrInteraction) {
             };
             const imageUrl = await fetchPageImage(canonical);
 
-            const container = buildPageEmbed(displayTitle, content.slice(0, 1000), imageUrl, wikiConfig);
+            const container = buildPageEmbed(displayTitle, content.slice(0, 1000), imageUrl, wikiConfig, gallery);
             
             await smartReply({
                 components: [container],
