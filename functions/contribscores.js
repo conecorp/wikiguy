@@ -31,7 +31,7 @@ async function getContributionScores(wikiConfig) {
             const user = row.match(/<bdi>(.*?)<\/bdi>/)?.[1] || "Unknown";
             const stats = [...row.matchAll(/>([\d,]+)\s*<\/td>/g)];
             if (stats.length >= 1) {
-                dataSummary += `${i+1}. <:playerpoint:1472433775593000961> ${stats[1][1]} • ✏️ ${stats[3][1]}    **[@${user}](${wikiConfig.articlePath}User:${user})**\n`;
+                dataSummary += `${i+1}. <:playerpoint:1472433775593000961> \`${stats[1][1]}\` • ✏️ \`${stats[3][1]}\`    **[@${user}](${wikiConfig.articlePath}User:${user})**\n`;
             }
         });
 
