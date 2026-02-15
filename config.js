@@ -40,6 +40,9 @@ const TODO_UPDATE_CHANNELS = {
     "1454904248943771748": "1454904573130084393"  // ABJ updates
 };
 
+const toggleContribScore = true;
+const toggleToDoList = true;
+
 // --- DISCORD STATUSES ---
 const STATUS_OPTIONS = [
     { type: 4, text: "just send [[a page]] or {{a page}}!" },
@@ -54,5 +57,7 @@ module.exports = {
     WIKIS,
     CATEGORY_WIKI_MAP,
     TODO_UPDATE_CHANNELS,
+    toggleContribScore,
+    toggleToDoList,
     STATUS_OPTIONS
 };

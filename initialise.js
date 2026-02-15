@@ -36,7 +36,7 @@ const {
     ApplicationCommandType
 } = require("discord.js");
 
-const { BOT_NAME, WIKIS, CATEGORY_WIKI_MAP, TODO_UPDATE_CHANNELS, STATUS_OPTIONS } = require("./config.js");
+const { BOT_NAME, WIKIS, CATEGORY_WIKI_MAP, TODO_UPDATE_CHANNELS, toggleContribScore, toggleToDoList, STATUS_OPTIONS } = require("./config.js");
 
 // node-fetch wrapper 
 const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
@@ -481,6 +481,10 @@ client.on("messageReactionAdd", async (reaction, user) => {
 client.on("interactionCreate", async (interaction) => {
     if (interaction.isModalSubmit()) {
         if (interaction.customId.startsWith('todo_tick_modal_')) {
+            if (!toggleToDoList) {
+                await interaction.reply({ content: 'Todo list is currently disabled.', ephemeral: true });
+                return;
+            }
             const categoryId = interaction.customId.replace('todo_tick_modal_', '');
 
             // Extract selected values from CheckboxGroup
@@ -503,7 +507,7 @@ client.on("interactionCreate", async (interaction) => {
             const remainingTasks = updateTasks(categoryId, completedTaskIds);
 
             // Send update to the channel
-            const updateChannelId = TODO_UPDATE_CHANNELS[categoryId];
+            const updateChannelId = TODO_UPDATE_CHANNELS[categoryId] || interaction.channelId;
             if (updateChannelId) {
                 try {
                     const channel = await interaction.client.channels.fetch(updateChannelId);
@@ -535,6 +539,10 @@ client.on("interactionCreate", async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'todo') {
+        if (!toggleToDoList) {
+            await interaction.reply({ content: 'Todo list is currently disabled.', ephemeral: true });
+            return;
+        }
         const subcommand = interaction.options.getSubcommand();
 
         if (subcommand === 'add') {
@@ -551,7 +559,7 @@ client.on("interactionCreate", async (interaction) => {
             await interaction.reply({ content: `Added task: **${task.name}**`, ephemeral: true });
 
             // Send update to the channel
-            const updateChannelId = TODO_UPDATE_CHANNELS[categoryId];
+            const updateChannelId = TODO_UPDATE_CHANNELS[categoryId] || interaction.channelId;
             if (updateChannelId) {
                 try {
                     const channel = await interaction.client.channels.fetch(updateChannelId);
@@ -594,6 +602,10 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (interaction.commandName === 'contribscores') {
+        if (!toggleContribScore) {
+            await interaction.reply({ content: 'Contribution scores are currently disabled.', ephemeral: true });
+            return;
+        }
         const wikiKey = interaction.options.getString('wiki');
         const wikiConfig = WIKIS[wikiKey];
 
