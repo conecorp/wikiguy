@@ -35,9 +35,9 @@ const CATEGORY_WIKI_MAP = {
 };
 
 const TODO_UPDATE_CHANNELS = {
-    "1286781988669231166": "1286782522771902505", // SB64 updates
-    "1389381096436793484": "1389381283624259654", // SR updates
-    "1454904248943771748": "1454904573130084393"  // ABJ updates
+    "1286781988669231166": "1443187613472129135", // SB64 updates
+    "1389381096436793484": "1421454100930756709", // SR updates
+    "1454904248943771748": "1454904720538861568"  // ABJ updates
 };
 
 const toggleContribScore = true;
@@ -47,9 +47,17 @@ const toggleToDoList = true;
 const STATUS_OPTIONS = [
     { type: 4, text: "just send [[a page]] or {{a page}}!" },
     { type: 4, text: "now supporting 3 wikis!" },
-    { type: 4, text: "use [[sb64:Page]] for Super Blox 64" },
-    { type: 4, text: "use [[sr:Page]] for Superstar Racers" },
-    { type: 4, text: "use [[abj:Page]] for A Block's Journey" },
+    { type: 4, text: "use [[sb64:page]] for SUPER BLOX 64! embedding" },
+    { type: 4, text: "use [[sr:Page]] for Superstar Racers embedding" },
+    { type: 4, text: "use [[abj:Page]] for A Block's Journey embedding" },
+    { type: 4, text: "ablocksjourney.wiki" },
+    { type: 4, text: "superstarracers.wiki" },
+    { type: 4, text: "superblox64.wiki" },
+    { type: 4, text: "conecorp.cc" },
+    { type: 4, text: "₊˚⊹⋆" },
+    { type: 4, text: "⋆｡𖦹°⭒˚｡⋆" },
+    { type: 4, text: "✶⋆.˚" },
+    { type: 4, text: "°˖➴" },
 ];
 
 module.exports = {
