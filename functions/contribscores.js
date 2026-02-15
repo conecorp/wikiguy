@@ -48,7 +48,7 @@ async function getContributionScores(wikiConfig) {
             const paddedScore = data.score.padStart(maxScoreLength, ' ');
             const paddedEdits = data.edits.padStart(maxEditLength, ' ');
         
-            dataSummary += `${i + 1}. <:playerpoint:1472433775593000961> \`${paddedScore}\` • ✏️ \`${paddedEdits}\`    **[@${data.user}](${wikiConfig.articlePath}User:${data.user})**\n`;
+            dataSummary += `${i + 1}. <:playerpoint:1472433775593000961> \`${paddedScore}\`    ✏️ \`${paddedEdits}\`    **[@${data.user}](${wikiConfig.articlePath}User:${data.user})**\n`;
         });
 
         if (!dataSummary) return {
