@@ -239,8 +239,13 @@ async function getSectionContent(pageTitle, sectionName, wikiConfig) {
             }
         });
 
+        // Remove gallery from HTML to avoid duplicating captions in content
+        if (galleryItems.length > 0) {
+            $('ul.gallery').remove();
+        }
+        
         return {
-            content: htmlToMarkdown(html, wikiConfig.baseUrl),
+            content: htmlToMarkdown($.html(), wikiConfig.baseUrl),
             displayTitle: sectionInfo.line,
             gallery: galleryItems.length > 0 ? galleryItems : null
         };
