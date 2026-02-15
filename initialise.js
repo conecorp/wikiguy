@@ -423,7 +423,14 @@ client.on("messageReactionAdd", async (reaction, user) => {
 
     const emoji = reaction.emoji.name;
     if (emoji === "🗑️" || emoji === "🗑") {
-        const message = reaction.message;
+        let message = reaction.message;
+        if (message.partial) {
+            try {
+                message = await message.fetch();
+            } catch (err) {
+                return; // Message was deleted or inaccessible
+            }
+        }
         if (message.author.id !== client.user.id) return;
 
         let originalAuthorId = null;
