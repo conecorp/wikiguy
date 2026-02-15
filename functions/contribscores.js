@@ -27,12 +27,28 @@ async function getContributionScores(wikiConfig) {
         let dataSummary = `## Edit leaderboard for [${wikiConfig.name} Wiki](${wikiConfig.articlePath}Special:ContributionScores) <:emoji:${wikiConfig.emoji}>\n`;
         dataSummary += `-# Top 10 users over the past 7 days\n\n`;
         
-        rows.forEach((row, i) => {
+        // Extract raw data into an array
+        const userData = rows.map((row) => {
             const user = row.match(/<bdi>(.*?)<\/bdi>/)?.[1] || "Unknown";
             const stats = [...row.matchAll(/>([\d,]+)\s*<\/td>/g)];
-            if (stats.length >= 1) {
-                dataSummary += `${i+1}. <:playerpoint:1472433775593000961> ${stats[1][1]} • ✏️ ${stats[3][1]}    **[@${user}](${wikiConfig.articlePath}User:${user})**\n`;
-            }
+            
+            // grab the score (index 1) and edits (index 3)
+            const score = stats[1] ? stats[1][1].replace(/,/g, '') : "0";
+            const edits = stats[3] ? stats[3][1] : "0";
+            
+            return { user, score, edits };
+        });
+        
+        // Find the character length of the highest number (e.g., "100" = 3)
+        const maxScoreLength = Math.max(...userData.map(d => d.score.length), 1);
+        const maxEditLength = Math.max(...userData.map(d => d.edits.length), 1);
+        
+        // Loop through the data and build the string with padding
+        userData.forEach((data, i) => {
+            const paddedScore = data.score.padStart(maxScoreLength, ' ');
+            const paddedEdits = data.edits.padStart(maxEditLength, ' ');
+        
+            dataSummary += `${i + 1}. <:playerpoint:1472433775593000961> \`${paddedScore}\` • ✏️ \`${paddedEdits}\`    **[@${data.user}](${wikiConfig.articlePath}User:${data.user})**\n`;
         });
 
         if (!dataSummary) return {
