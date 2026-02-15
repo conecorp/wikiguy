@@ -45,14 +45,16 @@ function htmlToMarkdown(html, baseUrl) {
                 return '\n';
             case 'p':
             case 'div':
+            case 'li':
+                return `${childrenContent}\n`;
             case 'h1':
             case 'h2':
+                return childrenContent.trim() ? `## ${childrenContent.trim()}\n` : '';
             case 'h3':
             case 'h4':
             case 'h5':
             case 'h6':
-            case 'li':
-                return `${childrenContent}\n`;
+                return childrenContent.trim() ? `### ${childrenContent.trim()}\n` : '';
             default:
                 return childrenContent;
         }

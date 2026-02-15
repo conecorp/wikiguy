@@ -15,13 +15,16 @@ async function getContributionScores(wikiConfig) {
         const json = await res.json();
         const html = json.parse?.text?.["*"];
 
-        if (!html) return { result: "No contribution data available." };
+        if (!html) return {
+            title: "Special:ContributionScores",
+            result: "No content available."
+        };
 
         // Basic Regex to pull the username and score from the HTML table
         const rows = html.split('<tr class="">');
         rows.shift(); // Remove header
 
-        let dataSummary = `Edit leaderboard for ${wikiConfig.name}: Wiki\n`;
+        let dataSummary = "";
         rows.forEach((row, i) => {
             const user = row.match(/<bdi>(.*?)<\/bdi>/)?.[1] || "Unknown";
             const stats = [...row.matchAll(/>([\d,]+)\s*<\/td>/g)];
@@ -30,7 +33,15 @@ async function getContributionScores(wikiConfig) {
             }
         });
 
-        return { result: dataSummary };
+        if (!dataSummary) return {
+            title: "Special:ContributionScores",
+            result: "No content available."
+        };
+
+        return {
+            title: "Special:ContributionScores",
+            result: dataSummary
+        };
     } catch (err) {
         console.error("Error fetching leaderboard:", err);
         return { error: "Failed to fetch leaderboard data." };

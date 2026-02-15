@@ -7,21 +7,24 @@ const WIKIS = {
         baseUrl: "https://superblox64.wiki",
         apiEndpoint: "https://superblox64.wiki/w/api.php",
         articlePath: "https://superblox64.wiki/wiki/",
-        syntax: ";;"
+        syntax: ";;",
+        emoji: "1472436401680158741"
     },
     "superstar-racers": {
         name: "Superstar Racers",
         baseUrl: "https://superstarracers.wiki",
         apiEndpoint: "https://superstarracers.wiki/w/api.php",
         articlePath: "https://superstarracers.wiki/wiki/",
-        syntax: "&&"
+        syntax: "&&",
+        emoji: "1472436382998728714"
     },
     "a-blocks-journey": {
         name: "A Block's Journey",
         baseUrl: "https://ablocksjourney.wiki",
         apiEndpoint: "https://ablocksjourney.wiki/w/api.php",
         articlePath: "https://ablocksjourney.wiki/wiki/",
-        syntax: "!!"
+        syntax: "!!",
+        emoji: "1472436415760568460"
     }
 };
 

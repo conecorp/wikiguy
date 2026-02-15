@@ -72,38 +72,53 @@ function splitMessage(text, maxLength = DISCORD_MAX_LENGTH) {
 // --- NEW: UNIFIED COMPONENT BUILDER ---
 function buildPageEmbed(title, content, imageUrl, wikiConfig) {
     const container = new ContainerBuilder();
-    const mainSection = new SectionBuilder();
-
-    // 1. Text Content
-    mainSection.addTextDisplayComponents([new TextDisplayBuilder().setContent(content)]);
     
-    // 2. Image (Thumbnail)
-    const fallbackImage = "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"; 
-    const finalImageUrl = (typeof imageUrl === "string" && imageUrl.trim() !== "") ? imageUrl : fallbackImage;
-    
-    try {
-        mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
-    } catch (err) { }      
+    const showEmbed = content && content !== "No content available.";
 
-    if (mainSection.components && mainSection.components.length > 0) {
-        mainSection.components = mainSection.components.filter(c => c !== undefined);
-        if (mainSection.components.length > 0) {
-            container.addSectionComponents(mainSection);
+    if (showEmbed) {
+        const mainSection = new SectionBuilder();
+
+        // 1. Text Content
+        mainSection.addTextDisplayComponents([new TextDisplayBuilder().setContent(content)]);
+
+        // 2. Image (Thumbnail)
+        const fallbackImage = "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png";
+        const finalImageUrl = (typeof imageUrl === "string" && imageUrl.trim() !== "") ? imageUrl : fallbackImage;
+
+        try {
+            mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
+        } catch (err) { }
+
+        if (mainSection.components && mainSection.components.length > 0) {
+            mainSection.components = mainSection.components.filter(c => c !== undefined);
+            if (mainSection.components.length > 0) {
+                container.addSectionComponents(mainSection);
+            }
         }
     }
     
     // 3. Action Row (Link Button)
     if (title) {
         try {
-            const [pageOnly, frag] = String(title).split("#");
-            const parts = pageOnly.split(':').map(s => encodeURIComponent(s.replace(/ /g, "_")));
-            const pageUrl = `${wikiConfig.articlePath}${parts.join(':')}${frag ? '#'+encodeURIComponent(frag.replace(/ /g,'_')) : ''}`;
+            let pageUrl;
+            if (title === "Special:ContributionScores") {
+                pageUrl = `${wikiConfig.articlePath}Special:ContributionScores`;
+            } else {
+                const [pageOnly, frag] = String(title).split("#");
+                const parts = pageOnly.split(':').map(s => encodeURIComponent(s.replace(/ /g, "_")));
+                const anchor = frag ? '#' + encodeURIComponent(frag.replace(/ /g, '_')) : '';
+                pageUrl = `${wikiConfig.articlePath}${parts.join(':')}${anchor}`;
+            }
             
             const row = new ActionRowBuilder();
             const btn = new ButtonBuilder()
                 .setLabel(String(title).slice(0, 80))
                 .setStyle(ButtonStyle.Link)
                 .setURL(pageUrl);
+
+            if (wikiConfig.emoji) {
+                btn.setEmoji(wikiConfig.emoji);
+            }
     
             if (btn) row.addComponents(btn);
             if (row.components.length > 0) container.addActionRowComponents(row);
@@ -315,14 +330,11 @@ client.on("interactionCreate", async (interaction) => {
         if (result.error) {
             await interaction.editReply({ content: result.error });
         } else {
-            const parts = splitMessage(result.result);
-            for (const [index, part] of parts.entries()) {
-                if (index === 0) {
-                    await interaction.editReply({ content: part });
-                } else {
-                    await interaction.followUp({ content: part });
-                }
-            }
+            const container = buildPageEmbed(result.title, result.result, null, wikiConfig);
+            await interaction.editReply({
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+            });
         }
     }
 });
