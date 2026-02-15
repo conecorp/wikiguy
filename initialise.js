@@ -87,7 +87,9 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig) {
 
         try {
             mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
-        } catch (err) { }
+        } catch (err) {
+            console.warn("Failed to set thumbnail:", err.message);
+        }
 
         if (mainSection.components && mainSection.components.length > 0) {
             mainSection.components = mainSection.components.filter(c => c !== undefined);
@@ -122,7 +124,9 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig) {
     
             if (btn) row.addComponents(btn);
             if (row.components.length > 0) container.addActionRowComponents(row);
-        } catch (err) {}
+        } catch (err) {
+            console.warn("Failed to build link button:", err.message);
+        }
     }
 
     return container;
