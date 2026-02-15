@@ -3,10 +3,10 @@ const BOT_NAME = "Orbital";
 
 const WIKIS = {
     "super-blox-64": {
-        name: "Super Blox 64",
+        name: "SUPER BLOX 64!",
         baseUrl: "https://superblox64.wiki",
         apiEndpoint: "https://superblox64.wiki/w/api.php",
-        articlePath: "https://superblox64.wiki/wiki/",
+        articlePath: "https://superblox64.wiki/",
         syntax: ";;",
         emoji: "1472436401680158741"
     },
@@ -14,7 +14,7 @@ const WIKIS = {
         name: "Superstar Racers",
         baseUrl: "https://superstarracers.wiki",
         apiEndpoint: "https://superstarracers.wiki/w/api.php",
-        articlePath: "https://superstarracers.wiki/wiki/",
+        articlePath: "https://superstarracers.wiki/",
         syntax: "&&",
         emoji: "1472436382998728714"
     },
@@ -22,7 +22,7 @@ const WIKIS = {
         name: "A Block's Journey",
         baseUrl: "https://ablocksjourney.wiki",
         apiEndpoint: "https://ablocksjourney.wiki/w/api.php",
-        articlePath: "https://ablocksjourney.wiki/wiki/",
+        articlePath: "https://ablocksjourney.wiki/",
         syntax: "!!",
         emoji: "1472436415760568460"
     }
