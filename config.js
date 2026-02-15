@@ -34,14 +34,7 @@ const CATEGORY_WIKI_MAP = {
     "1454904248943771748": "a-blocks-journey"
 };
 
-const TODO_UPDATE_CHANNELS = {
-    "1286781988669231166": "1443187613472129135", // SB64 updates
-    "1389381096436793484": "1421454100930756709", // SR updates
-    "1454904248943771748": "1454904720538861568"  // ABJ updates
-};
-
 const toggleContribScore = true;
-const toggleToDoList = true;
 
 // --- DISCORD STATUSES ---
 const STATUS_OPTIONS = [
@@ -64,8 +57,6 @@ module.exports = {
     BOT_NAME,
     WIKIS,
     CATEGORY_WIKI_MAP,
-    TODO_UPDATE_CHANNELS,
     toggleContribScore,
-    toggleToDoList,
     STATUS_OPTIONS
 };
