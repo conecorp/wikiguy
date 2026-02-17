@@ -42,26 +42,29 @@ async function handleFileRequest(wikiConfig, fileName, interaction) {
         const json = await res.json();
         const pages = json.query?.pages;
         if (!pages) {
-            return interaction.reply({ content: "File not found.", ephemeral: true });
+            const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
+            return reply.call(interaction, { content: "File not found.", ephemeral: true });
         }
 
         const page = Object.values(pages)[0];
         if (page.missing !== undefined) {
-            return interaction.reply({ content: `File "${fileName}" not found on [${wikiConfig.name}](<${wikiConfig.baseUrl}>).`, ephemeral: true });
+            const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
+            return reply.call(interaction, { content: `File "${fileName}" not found on [${wikiConfig.name}](<${wikiConfig.baseUrl}>).`, ephemeral: true });
         }
 
         const info = page.imageinfo?.[0];
         if (!info) {
-            return interaction.reply({ content: "Could not retrieve file information.", ephemeral: true });
+            const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
+            return reply.call(interaction, { content: "Could not retrieve file information.", ephemeral: true });
         }
 
         const url = info.url;
-        const mime = info.mime;
+        const mime = info.mime || "";
         const title = page.title;
 
         const container = new ContainerBuilder();
 
-        const isPictureOrVideo = mime.startsWith("image/") || mime.startsWith("video/");
+        const isPictureOrVideo = typeof mime === "string" && (mime.startsWith("image/") || mime.startsWith("video/"));
 
         if (isPictureOrVideo) {
             const mediaGallery = new MediaGalleryBuilder();
@@ -93,7 +96,8 @@ async function handleFileRequest(wikiConfig, fileName, interaction) {
         row.addComponents(btn);
         container.addActionRowComponents(row);
 
-        return await interaction.reply({
+        const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
+        return await reply.call(interaction, {
             content: "",
             components: [container],
             flags: MessageFlags.IsComponentsV2
@@ -101,7 +105,7 @@ async function handleFileRequest(wikiConfig, fileName, interaction) {
 
     } catch (err) {
         console.error("Error in handleFileRequest:", err);
-        const reply = interaction.deferred || interaction.replied ? interaction.followUp : interaction.reply;
+        const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
         return reply.call(interaction, { content: "An error occurred while fetching the file information.", ephemeral: true });
     }
 }

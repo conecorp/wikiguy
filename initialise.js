@@ -280,8 +280,11 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
             }
         }
         if (isInteraction(messageOrInteraction)) {
-            if (messageOrInteraction.deferred || messageOrInteraction.replied) {
+            if (messageOrInteraction.replied) {
                 return messageOrInteraction.followUp(payload);
+            }
+            if (messageOrInteraction.deferred) {
+                return messageOrInteraction.editReply(payload);
             }
             return messageOrInteraction.reply(payload);
         } else if (typeof messageOrInteraction.reply === 'function') {
@@ -490,10 +493,21 @@ client.on("interactionCreate", async (interaction) => {
                         aplimit: '25',
                         format: 'json'
                     });
-                    const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`);
+                    const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
+                        headers: { "User-Agent": "DiscordBot/Orbital" }
+                    });
                     const json = await res.json();
                     const pages = json.query?.allpages || [];
-                    return interaction.respond(pages.map(p => ({ name: p.title, value: p.title }))).catch(() => {});
+                    const seen = new Set();
+                    const choices = [];
+                    for (const p of pages) {
+                        let title = p.title.slice(0, 100);
+                        if (seen.has(title)) continue;
+                        seen.add(title);
+                        choices.push({ name: title, value: title });
+                        if (choices.length >= 25) break;
+                    }
+                    return interaction.respond(choices).catch(err => console.error("Failed to respond to page autocomplete:", err));
                 } else if (focusedOption.name === 'file') {
                     const params = new URLSearchParams({
                         action: 'query',
@@ -502,14 +516,25 @@ client.on("interactionCreate", async (interaction) => {
                         ailimit: '25',
                         format: 'json'
                     });
-                    const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`);
+                    const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
+                        headers: { "User-Agent": "DiscordBot/Orbital" }
+                    });
                     const json = await res.json();
                     const images = json.query?.allimages || [];
-                    return interaction.respond(images.map(i => ({ name: i.title, value: i.title }))).catch(() => {});
+                    const seen = new Set();
+                    const choices = [];
+                    for (const i of images) {
+                        let title = i.title.slice(0, 100);
+                        if (seen.has(title)) continue;
+                        seen.add(title);
+                        choices.push({ name: title, value: title });
+                        if (choices.length >= 25) break;
+                    }
+                    return interaction.respond(choices).catch(err => console.error("Failed to respond to file autocomplete:", err));
                 }
             } catch (err) {
                 console.error("Autocomplete error:", err);
-                return interaction.respond([]).catch(() => {});
+                return interaction.respond([]).catch(err => console.error("Failed to respond to autocomplete after error:", err));
             }
         }
         return;
@@ -553,9 +578,11 @@ client.on("interactionCreate", async (interaction) => {
 
         if (subcommand === 'page') {
             const pageName = interaction.options.getString('page');
+            await interaction.deferReply();
             await handleUserRequest(wikiConfig, pageName, interaction);
         } else if (subcommand === 'file') {
             const fileName = interaction.options.getString('file');
+            await interaction.deferReply();
             await handleFileRequest(wikiConfig, fileName, interaction);
         }
     }
