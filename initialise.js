@@ -56,6 +56,48 @@ const syntaxRegex = new RegExp(
 
 const responseMap = new Map();
 
+const wikiChoices = Object.entries(WIKIS).map(([key, wiki]) => ({
+    name: wiki.name,
+    value: key
+}));
+
+async function getAutocompleteChoices(wikiConfig, listType, prefix) {
+    const params = new URLSearchParams({
+        action: 'query',
+        list: listType,
+        [listType === 'allpages' ? 'apprefix' : 'aiprefix']: prefix,
+        [listType === 'allpages' ? 'aplimit' : 'ailimit']: '25',
+        format: 'json'
+    });
+
+    try {
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
+            headers: { "User-Agent": "DiscordBot/Orbital" }
+        });
+
+        if (!res.ok) {
+            console.error(`Autocomplete fetch failed: ${res.status} ${res.statusText}`);
+            return [];
+        }
+
+        const json = await res.json();
+        const items = json.query?.[listType] || [];
+        const seen = new Set();
+        const choices = [];
+        for (const item of items) {
+            let title = item.title.slice(0, 100);
+            if (seen.has(title)) continue;
+            seen.add(title);
+            choices.push({ name: title, value: title });
+            if (choices.length >= 25) break;
+        }
+        return choices;
+    } catch (err) {
+        console.error(`Autocomplete error for ${listType}:`, err);
+        return [];
+    }
+}
+
 // --- NEW: UNIFIED COMPONENT BUILDER ---
 function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
     const container = new ContainerBuilder();
@@ -198,10 +240,7 @@ client.once("ready", async () => {
                         description: 'The wiki to get scores from',
                         type: 3, // STRING
                         required: true,
-                        choices: Object.entries(WIKIS).map(([key, wiki]) => ({
-                            name: wiki.name,
-                            value: key
-                        }))
+                        choices: wikiChoices
                     }
                 ]
             },
@@ -219,10 +258,7 @@ client.once("ready", async () => {
                                 description: 'The wiki to search in',
                                 type: 3, // STRING
                                 required: true,
-                                choices: Object.entries(WIKIS).map(([key, wiki]) => ({
-                                    name: wiki.name,
-                                    value: key
-                                }))
+                                choices: wikiChoices
                             },
                             {
                                 name: 'page',
@@ -243,10 +279,7 @@ client.once("ready", async () => {
                                 description: 'The wiki to search in',
                                 type: 3, // STRING
                                 required: true,
-                                choices: Object.entries(WIKIS).map(([key, wiki]) => ({
-                                    name: wiki.name,
-                                    value: key
-                                }))
+                                choices: wikiChoices
                             },
                             {
                                 name: 'file',
@@ -484,58 +517,11 @@ client.on("interactionCreate", async (interaction) => {
                 return interaction.respond([]).catch(() => {});
             }
 
-            try {
-                if (focusedOption.name === 'page') {
-                    const params = new URLSearchParams({
-                        action: 'query',
-                        list: 'allpages',
-                        apprefix: focusedOption.value,
-                        aplimit: '25',
-                        format: 'json'
-                    });
-                    const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
-                        headers: { "User-Agent": "DiscordBot/Orbital" }
-                    });
-                    const json = await res.json();
-                    const pages = json.query?.allpages || [];
-                    const seen = new Set();
-                    const choices = [];
-                    for (const p of pages) {
-                        let title = p.title.slice(0, 100);
-                        if (seen.has(title)) continue;
-                        seen.add(title);
-                        choices.push({ name: title, value: title });
-                        if (choices.length >= 25) break;
-                    }
-                    return interaction.respond(choices).catch(err => console.error("Failed to respond to page autocomplete:", err));
-                } else if (focusedOption.name === 'file') {
-                    const params = new URLSearchParams({
-                        action: 'query',
-                        list: 'allimages',
-                        aiprefix: focusedOption.value,
-                        ailimit: '25',
-                        format: 'json'
-                    });
-                    const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
-                        headers: { "User-Agent": "DiscordBot/Orbital" }
-                    });
-                    const json = await res.json();
-                    const images = json.query?.allimages || [];
-                    const seen = new Set();
-                    const choices = [];
-                    for (const i of images) {
-                        let title = i.title.slice(0, 100);
-                        if (seen.has(title)) continue;
-                        seen.add(title);
-                        choices.push({ name: title, value: title });
-                        if (choices.length >= 25) break;
-                    }
-                    return interaction.respond(choices).catch(err => console.error("Failed to respond to file autocomplete:", err));
-                }
-            } catch (err) {
-                console.error("Autocomplete error:", err);
-                return interaction.respond([]).catch(err => console.error("Failed to respond to autocomplete after error:", err));
-            }
+            const listType = focusedOption.name === 'page' ? 'allpages' : (focusedOption.name === 'file' ? 'allimages' : null);
+            if (!listType) return interaction.respond([]).catch(() => {});
+
+            const choices = await getAutocompleteChoices(wikiConfig, listType, focusedOption.value);
+            return interaction.respond(choices).catch(err => console.error(`Failed to respond to ${focusedOption.name} autocomplete:`, err));
         }
         return;
     }

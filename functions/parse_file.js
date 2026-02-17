@@ -42,20 +42,26 @@ async function handleFileRequest(wikiConfig, fileName, interaction) {
         const json = await res.json();
         const pages = json.query?.pages;
         if (!pages) {
-            const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
-            return reply.call(interaction, { content: "File not found.", ephemeral: true });
+            if (interaction.deferred || interaction.replied) {
+                return interaction.followUp({ content: "File not found.", ephemeral: true });
+            }
+            return interaction.reply({ content: "File not found.", ephemeral: true });
         }
 
         const page = Object.values(pages)[0];
         if (page.missing !== undefined) {
-            const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
-            return reply.call(interaction, { content: `File "${fileName}" not found on [${wikiConfig.name}](<${wikiConfig.baseUrl}>).`, ephemeral: true });
+            if (interaction.deferred || interaction.replied) {
+                return interaction.followUp({ content: `File "${fileName}" not found on [${wikiConfig.name}](<${wikiConfig.baseUrl}>).`, ephemeral: true });
+            }
+            return interaction.reply({ content: `File "${fileName}" not found on [${wikiConfig.name}](<${wikiConfig.baseUrl}>).`, ephemeral: true });
         }
 
         const info = page.imageinfo?.[0];
         if (!info) {
-            const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
-            return reply.call(interaction, { content: "Could not retrieve file information.", ephemeral: true });
+            if (interaction.deferred || interaction.replied) {
+                return interaction.followUp({ content: "Could not retrieve file information.", ephemeral: true });
+            }
+            return interaction.reply({ content: "Could not retrieve file information.", ephemeral: true });
         }
 
         const url = info.url;
@@ -64,7 +70,7 @@ async function handleFileRequest(wikiConfig, fileName, interaction) {
 
         const container = new ContainerBuilder();
 
-        const isPictureOrVideo = typeof mime === "string" && (mime.startsWith("image/") || mime.startsWith("video/"));
+        const isPictureOrVideo = mime.startsWith("image/") || mime.startsWith("video/");
 
         if (isPictureOrVideo) {
             const mediaGallery = new MediaGalleryBuilder();
@@ -105,8 +111,14 @@ async function handleFileRequest(wikiConfig, fileName, interaction) {
 
     } catch (err) {
         console.error("Error in handleFileRequest:", err);
-        const reply = interaction.deferred || interaction.replied ? interaction.editReply : interaction.reply;
-        return reply.call(interaction, { content: "An error occurred while fetching the file information.", ephemeral: true });
+        try {
+            if (interaction.deferred || interaction.replied) {
+                return await interaction.followUp({ content: "An error occurred while fetching the file information.", ephemeral: true });
+            }
+            return await interaction.reply({ content: "An error occurred while fetching the file information.", ephemeral: true });
+        } catch (secondaryErr) {
+            console.error("Failed to send error reply:", secondaryErr);
+        }
     }
 }
 
