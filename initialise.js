@@ -61,10 +61,16 @@ const wikiChoices = Object.entries(WIKIS).map(([key, wiki]) => ({
 }));
 
 async function getAutocompleteChoices(wikiConfig, listType, prefix) {
+    // strip "file:" prefix for image searches to ensure API compatibility
+    let searchPrefix = prefix;
+    if (listType === 'allimages' && prefix.toLowerCase().startsWith('file:')) {
+        searchPrefix = prefix.slice(5);
+    }
+
     const params = new URLSearchParams({
         action: 'query',
         list: listType,
-        [listType === 'allpages' ? 'apprefix' : 'aiprefix']: prefix,
+        [listType === 'allpages' ? 'apprefix' : 'aiprefix']: searchPrefix,
         [listType === 'allpages' ? 'aplimit' : 'ailimit']: '25',
         format: 'json'
     });
