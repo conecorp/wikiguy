@@ -9,6 +9,7 @@ const {
 } = require("./functions/parse_page.js");
 
 const { getContributionScores } = require("./functions/contribscores.js");
+const { handleFileRequest } = require("./functions/parse_file.js");
 
 const {
     Client,
@@ -53,6 +54,54 @@ const syntaxRegex = new RegExp(
 );
 
 const responseMap = new Map();
+
+const wikiChoices = Object.entries(WIKIS).map(([key, wiki]) => ({
+    name: wiki.name,
+    value: key
+}));
+
+async function getAutocompleteChoices(wikiConfig, listType, prefix) {
+    // strip "file:" prefix for image searches to ensure API compatibility
+    let searchPrefix = prefix;
+    if (listType === 'allimages' && prefix.toLowerCase().startsWith('file:')) {
+        searchPrefix = prefix.slice(5);
+    }
+
+    const params = new URLSearchParams({
+        action: 'query',
+        list: listType,
+        [listType === 'allpages' ? 'apprefix' : 'aiprefix']: searchPrefix,
+        [listType === 'allpages' ? 'aplimit' : 'ailimit']: '25',
+        format: 'json'
+    });
+
+    try {
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
+            headers: { "User-Agent": "DiscordBot/Orbital" }
+        });
+
+        if (!res.ok) {
+            console.error(`Autocomplete fetch failed: ${res.status} ${res.statusText}`);
+            return [];
+        }
+
+        const json = await res.json();
+        const items = json.query?.[listType] || [];
+        const seen = new Set();
+        const choices = [];
+        for (const item of items) {
+            const title = item.title;
+            if (title.length > 100 || seen.has(title)) continue;
+            seen.add(title);
+            choices.push({ name: title, value: title });
+            if (choices.length >= 25) break;
+        }
+        return choices;
+    } catch (err) {
+        console.error(`Autocomplete error for ${listType}:`, err);
+        return [];
+    }
+}
 
 // --- NEW: UNIFIED COMPONENT BUILDER ---
 function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
@@ -196,10 +245,55 @@ client.once("ready", async () => {
                         description: 'The wiki to get scores from',
                         type: 3, // STRING
                         required: true,
-                        choices: Object.entries(WIKIS).map(([key, wiki]) => ({
-                            name: wiki.name,
-                            value: key
-                        }))
+                        choices: wikiChoices
+                    }
+                ]
+            },
+            {
+                name: 'wiki',
+                description: 'Wiki commands',
+                options: [
+                    {
+                        name: 'page',
+                        description: 'Search for a wiki page',
+                        type: 1, // SUB_COMMAND
+                        options: [
+                            {
+                                name: 'wiki',
+                                description: 'The wiki to search in',
+                                type: 3, // STRING
+                                required: true,
+                                choices: wikiChoices
+                            },
+                            {
+                                name: 'page',
+                                description: 'The page name',
+                                type: 3, // STRING
+                                required: true,
+                                autocomplete: true
+                            }
+                        ]
+                    },
+                    {
+                        name: 'file',
+                        description: 'Search for a wiki file',
+                        type: 1, // SUB_COMMAND
+                        options: [
+                            {
+                                name: 'wiki',
+                                description: 'The wiki to search in',
+                                type: 3, // STRING
+                                required: true,
+                                choices: wikiChoices
+                            },
+                            {
+                                name: 'file',
+                                description: 'The file name',
+                                type: 3, // STRING
+                                required: true,
+                                autocomplete: true
+                            }
+                        ]
                     }
                 ]
             }
@@ -224,8 +318,14 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
             }
         }
         if (isInteraction(messageOrInteraction)) {
-            if (messageOrInteraction.deferred || messageOrInteraction.replied) {
+            if (messageOrInteraction.replied) {
                 return messageOrInteraction.followUp(payload);
+            }
+            if (messageOrInteraction.deferred) {
+                if (payload.ephemeral) {
+                    return messageOrInteraction.followUp(payload);
+                }
+                return messageOrInteraction.editReply(payload);
             }
             return messageOrInteraction.reply(payload);
         } else if (typeof messageOrInteraction.reply === 'function') {
@@ -414,6 +514,27 @@ client.on("messageReactionAdd", async (reaction, user) => {
 });
 
 client.on("interactionCreate", async (interaction) => {
+    // --- Autocomplete ---
+    if (interaction.isAutocomplete()) {
+        if (interaction.commandName === 'wiki') {
+            const focusedOption = interaction.options.getFocused(true);
+            const wikiKey = interaction.options.getString('wiki');
+            const wikiConfig = WIKIS[wikiKey];
+
+            if (!wikiConfig) {
+                return interaction.respond([]).catch(() => {});
+            }
+
+            const listType = focusedOption.name === 'page' ? 'allpages' : (focusedOption.name === 'file' ? 'allimages' : null);
+            if (!listType) return interaction.respond([]).catch(() => {});
+
+            const choices = await getAutocompleteChoices(wikiConfig, listType, focusedOption.value);
+            return interaction.respond(choices).catch(err => console.error(`Failed to respond to ${focusedOption.name} autocomplete:`, err));
+        }
+        return;
+    }
+
+    // --- Command Execution ---
     if (interaction.commandName === 'contribscores') {
         if (!toggleContribScore) {
             await interaction.reply({ content: 'Contribution scores are currently disabled.', ephemeral: true });
@@ -438,6 +559,41 @@ client.on("interactionCreate", async (interaction) => {
                 components: [container],
                 flags: MessageFlags.IsComponentsV2
             });
+        }
+    } else if (interaction.commandName === 'wiki') {
+        const subcommand = interaction.options.getSubcommand();
+        const wikiKey = interaction.options.getString('wiki');
+        const wikiConfig = WIKIS[wikiKey];
+
+        if (!wikiConfig) {
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: 'Unknown wiki selection.', ephemeral: true }).catch(() => {});
+            }
+            return;
+        }
+
+        try {
+            if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
+
+            if (subcommand === 'page') {
+                const pageName = interaction.options.getString('page');
+                await handleUserRequest(wikiConfig, pageName, interaction);
+            } else if (subcommand === 'file') {
+                const fileName = interaction.options.getString('file');
+                await handleFileRequest(wikiConfig, fileName, interaction);
+            } else {
+                await interaction.editReply({ content: "Unknown subcommand." }).catch(() => {});
+            }
+        } catch (err) {
+            console.error(`Error executing wiki ${subcommand} command:`, err);
+            const errorMsg = { content: "An error occurred while executing the command.", ephemeral: true };
+            if (interaction.replied) {
+                await interaction.followUp(errorMsg).catch(() => {});
+            } else if (interaction.deferred) {
+                await interaction.editReply({ content: errorMsg.content }).catch(() => {});
+            } else {
+                await interaction.reply(errorMsg).catch(() => {});
+            }
         }
     }
 });
