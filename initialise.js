@@ -68,70 +68,101 @@ const wikiChoices = Object.entries(WIKIS).map(([key, wiki]) => ({
     value: key
 }));
 
-async function getAutocompleteChoices(wikiConfig, listType, prefix) {
-    const isFileSearch = listType === 'allimages';
-    let searchPrefix = prefix;
-
-    // For file searches, strip "file:" if the user typed it
-    if (isFileSearch && prefix.toLowerCase().startsWith('file:')) {
-        searchPrefix = prefix.slice(5);
-    }
-
-    const params = new URLSearchParams({
-        action: 'query',
-        format: 'json'
-    });
-
-    if (searchPrefix.trim() === '') {
-        // Fallback to prefix-based list for empty input
-        params.append('list', listType);
-        params.append(isFileSearch ? 'aiprefix' : 'apprefix', '');
-        params.append(isFileSearch ? 'ailimit' : 'aplimit', '25');
-    } else {
-        // Similar search using list=search
-        params.append('list', 'search');
-        params.append('srsearch', searchPrefix);
-        params.append('srnamespace', isFileSearch ? '6' : '0');
-        params.append('srlimit', '25');
-        params.append('srwhat', 'title');
-    }
-
+async function fetchWikiChoices(wikiConfig, params, listKey, isFileSearch) {
     try {
+        // Use a 3-second timeout to prevent autocomplete from hanging on slow wiki APIs
         const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
-            headers: { "User-Agent": "DiscordBot/Orbital" }
+            headers: { "User-Agent": "DiscordBot/Orbital" },
+            signal: AbortSignal.timeout(3000)
         });
-
         if (!res.ok) {
-            console.error(`Autocomplete fetch failed: ${res.status} ${res.statusText}`);
+            console.warn(`Wiki API returned ${res.status} for ${listKey} (${wikiConfig.apiEndpoint})`);
             return [];
         }
 
         const json = await res.json();
-        const items = json.query?.search || json.query?.[listType] || [];
-        const seen = new Set();
-        const choices = [];
+        const items = json.query?.[listKey] || [];
+        const results = [];
+
         for (const item of items) {
             let title = item.title ?? item.name;
             let value = title;
 
-            if (isFileSearch) {
-                // Remove "File:" prefix from both label and value
-                if (title.toLowerCase().startsWith('file:')) {
-                    title = title.slice(5);
-                    value = value.slice(5);
-                }
+            if (isFileSearch && title.toLowerCase().startsWith('file:')) {
+                title = title.slice(5);
+                value = value.slice(5);
             }
 
-            if (title.length > 100 || seen.has(title)) continue;
-            seen.add(title);
-            choices.push({ name: title, value: value });
-            if (choices.length >= 25) break;
+            if (title.length > 100) continue;
+            results.push({ name: title, value: value });
         }
-        return choices;
+        return results;
     } catch (err) {
-        console.error(`Autocomplete error for ${listType}:`, err);
+        console.error(`Fetch error for ${listKey}:`, err);
         return [];
     }
+}
+
+async function getAutocompleteChoices(wikiConfig, listType, prefix) {
+    const isFileSearch = listType === 'allimages';
+    const namespace = isFileSearch ? '6' : '0';
+    let searchPrefix = prefix.trim();
+
+    if (isFileSearch && searchPrefix.toLowerCase().startsWith('file:')) {
+        searchPrefix = searchPrefix.slice(5).trim();
+    }
+
+    if (searchPrefix === '') {
+        const params = new URLSearchParams({
+            action: 'query',
+            format: 'json',
+            list: listType,
+            [isFileSearch ? 'aiprefix' : 'apprefix']: '',
+            [isFileSearch ? 'ailimit' : 'aplimit']: '25'
+        });
+        return await fetchWikiChoices(wikiConfig, params, listType, isFileSearch);
+    }
+
+    // 1. Prefix search (best for instant autocomplete, case-insensitive)
+    const psParams = new URLSearchParams({
+        action: 'query',
+        format: 'json',
+        list: 'prefixsearch',
+        pssearch: searchPrefix,
+        psnamespace: namespace,
+        pslimit: '25'
+    });
+
+    // 2. Similar search using list=search (with intitle: for miser mode)
+    // We wrap searchPrefix in quotes to treat it as a literal phrase and avoid query manipulation.
+    const srParams = new URLSearchParams({
+        action: 'query',
+        format: 'json',
+        list: 'search',
+        srsearch: `intitle:"${searchPrefix.replace(/"/g, '')}"`,
+        srnamespace: namespace,
+        srlimit: '25'
+    });
+
+    const [psResults, srResults] = await Promise.all([
+        fetchWikiChoices(wikiConfig, psParams, 'prefixsearch', isFileSearch),
+        fetchWikiChoices(wikiConfig, srParams, 'search', isFileSearch)
+    ]);
+
+    const seen = new Set();
+    const finalChoices = [];
+
+    // Prioritize prefix search results
+    for (const choice of [...psResults, ...srResults]) {
+        const key = choice.value.toLowerCase();
+        if (!seen.has(key)) {
+            seen.add(key);
+            finalChoices.push(choice);
+            if (finalChoices.length >= 25) break;
+        }
+    }
+
+    return finalChoices;
 }
 
 // --- NEW: UNIFIED COMPONENT BUILDER ---
