@@ -84,8 +84,8 @@ async function getAutocompleteChoices(wikiConfig, listType, prefix) {
         const seen = new Set();
         const choices = [];
         for (const item of items) {
-            let title = item.title.slice(0, 100);
-            if (seen.has(title)) continue;
+            const title = item.title;
+            if (title.length > 100 || seen.has(title)) continue;
             seen.add(title);
             choices.push({ name: title, value: title });
             if (choices.length >= 25) break;
@@ -509,7 +509,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
 
 client.on("interactionCreate", async (interaction) => {
     // --- Autocomplete ---
-    if (interaction.type === InteractionType.ApplicationCommandAutocomplete) {
+    if (interaction.isAutocomplete()) {
         if (interaction.commandName === 'wiki') {
             const focusedOption = interaction.options.getFocused(true);
             const wikiKey = interaction.options.getString('wiki');
@@ -575,6 +575,8 @@ client.on("interactionCreate", async (interaction) => {
             } else if (subcommand === 'file') {
                 const fileName = interaction.options.getString('file');
                 await handleFileRequest(wikiConfig, fileName, interaction);
+            } else {
+                await interaction.editReply({ content: "Unknown subcommand.", ephemeral: true }).catch(() => {});
             }
         } catch (err) {
             console.error(`Error executing wiki ${subcommand} command:`, err);
