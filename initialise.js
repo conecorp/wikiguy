@@ -220,7 +220,7 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
         try {
             let pageUrl;
             if (title === "Special:ContributionScores") {
-                pageUrl = `${wikiConfig.articlePath}Special:ContributionScores`;
+                pageUrl = `${wikiConfig.articlePath}Special:ContributionScores?utm_source=orbital`;
             } else {
                 const isSectionLink = String(title).includes(" § ");
                 const titleStr = String(title);
@@ -236,7 +236,7 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
                 }
                 const parts = pageOnly.split(':').map(s => encodeURIComponent(s.replace(/ /g, "_")));
                 const anchor = frag ? '#' + encodeURIComponent(frag.replace(/ /g, '_')) : '';
-                pageUrl = `${wikiConfig.articlePath}${parts.join(':')}${anchor}`;
+                pageUrl = `${wikiConfig.articlePath}${parts.join(':')}?utm_source=orbital${anchor}`;
             }
             
             const row = new ActionRowBuilder();
