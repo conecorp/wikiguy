@@ -1,5 +1,24 @@
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+let fetchInstance;
+const fetch = async (...args) => {
+    if (!fetchInstance) {
+        const module = await import("node-fetch");
+        fetchInstance = module.default;
+    }
+    return fetchInstance(...args);
+};
 const cheerio = require('cheerio');
+
+// --- CACHING ---
+const CANONICAL_CACHE = new Map();
+const PAGE_DATA_CACHE = new Map();
+const MAX_CACHE_SIZE = 500;
+
+function pruneCache(map) {
+    while (map.size > MAX_CACHE_SIZE) {
+        const firstKey = map.keys().next().value;
+        map.delete(firstKey);
+    }
+}
 
 // --- UTILITIES ---
 function getFullSizeImageUrl(url) {
@@ -27,9 +46,13 @@ function getFullSizeImageUrl(url) {
     return url;
 }
 
-function htmlToMarkdown(html, baseUrl) {
-    if (!html) return "";
-    const $ = cheerio.load(html);
+function htmlToMarkdown(html, baseUrl, $existing = null) {
+    if (!html && !$existing) return "";
+    const $ = $existing || cheerio.load(html);
+
+    if (!html && $existing) {
+        // If we are using an existing cheerio instance, we should work with it as is.
+    }
 
     // Remove unwanted elements
     $('style, script, .thumb, figure, table, .mw-editsection, sup.reference, .noprint, .nomobile, .error, input, .ext-floatingui-content, .infobox, .portable-infobox, table[class*="infobox"], ol.references, .mw-collapsed, .template-navplate').remove();
@@ -110,6 +133,10 @@ function htmlToMarkdown(html, baseUrl) {
 async function findCanonicalTitle(input, wikiConfig) {
     if (!input) return null;
     const raw = String(input).trim();
+    const wikiKey = wikiConfig.prefix || wikiConfig.baseUrl;
+    const cacheKey = `${wikiKey}:${raw.toLowerCase()}`;
+
+    if (CANONICAL_CACHE.has(cacheKey)) return CANONICAL_CACHE.get(cacheKey);
 
     try {
         // direct lookup
@@ -130,7 +157,10 @@ async function findCanonicalTitle(input, wikiConfig) {
 
         // if found directly or through redirect return the canonical title
         if (page && page.missing === undefined) {
-            return page.title; 
+            const canonical = page.title;
+            CANONICAL_CACHE.set(cacheKey, canonical);
+            pruneCache(CANONICAL_CACHE);
+            return canonical;
         }
 
         // use case insensitive search
@@ -150,13 +180,83 @@ async function findCanonicalTitle(input, wikiConfig) {
 
         // return the title of the top search result if it exists
         if (topResult) {
-            return topResult.title;
+            const canonical = topResult.title;
+            CANONICAL_CACHE.set(cacheKey, canonical);
+            pruneCache(CANONICAL_CACHE);
+            return canonical;
         }
     } catch (err) {
         console.warn("findCanonicalTitle lookup failed:", err?.message || err);
     }
 
     return null;
+}
+
+async function getPageData(input, wikiConfig) {
+    if (!input) return null;
+    const raw = String(input).trim();
+    const wikiKey = wikiConfig.prefix || wikiConfig.baseUrl;
+    const cacheKey = `${wikiKey}:${raw.toLowerCase()}`;
+
+    // 1. Check Cache
+    if (CANONICAL_CACHE.has(cacheKey)) {
+        const canonical = CANONICAL_CACHE.get(cacheKey);
+        const pageCacheKey = `${wikiKey}:${canonical}`;
+        if (PAGE_DATA_CACHE.has(pageCacheKey)) {
+            return { canonical, ...PAGE_DATA_CACHE.get(pageCacheKey) };
+        }
+    }
+
+    try {
+        // 2. Try combined query
+        const params = new URLSearchParams({
+            action: "query",
+            format: "json",
+            titles: raw,
+            prop: "extracts|pageimages",
+            exintro: "1",
+            pithumbsize: "512",
+            redirects: "1",
+            indexpageids: "1"
+        });
+
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
+            headers: { "User-Agent": "DiscordBot/Orbital" }
+        });
+        const json = await res.json();
+
+        let pageId = json.query?.pageids?.[0];
+        let page = json.query?.pages?.[pageId];
+
+        // 3. If missing, try intitle search
+        if (!page || page.missing !== undefined) {
+            const canonical = await findCanonicalTitle(raw, wikiConfig);
+            if (canonical && canonical !== raw) {
+                return await getPageData(canonical, wikiConfig);
+            }
+            return null;
+        }
+
+        // 4. Extract data
+        const canonical = page.title;
+        const extract = page.extract ? htmlToMarkdown(page.extract, wikiConfig.baseUrl) : null;
+        const imageUrl = getFullSizeImageUrl(page.thumbnail?.source || null);
+
+        const data = { extract, imageUrl };
+
+        // 5. Update Cache
+        CANONICAL_CACHE.set(cacheKey, canonical);
+        pruneCache(CANONICAL_CACHE);
+
+        PAGE_DATA_CACHE.set(`${wikiKey}:${canonical}`, data);
+        pruneCache(PAGE_DATA_CACHE);
+
+        return { canonical, ...data };
+
+    } catch (err) {
+        console.warn("getPageData failed:", err.message);
+        return null;
+    }
 }
 
 async function getWikiContent(pageTitle, wikiConfig) {
@@ -273,7 +373,7 @@ async function getSectionContent(pageTitle, sectionName, wikiConfig) {
         }
         
         return {
-            content: htmlToMarkdown($.html(), wikiConfig.baseUrl),
+            content: htmlToMarkdown(null, wikiConfig.baseUrl, $),
             displayTitle: sectionInfo.line,
             gallery: galleryItems.length > 0 ? galleryItems : null
         };
@@ -418,6 +518,7 @@ async function parseTemplates(text, wikiConfig) {
 
 module.exports = { 
     findCanonicalTitle, 
+    getPageData,
     getWikiContent, 
     getSectionContent, 
     getLeadSection, 

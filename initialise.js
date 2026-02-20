@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const { 
     findCanonicalTitle, 
+    getPageData,
     getWikiContent, 
     getSectionContent, 
     getLeadSection, 
@@ -34,7 +35,14 @@ const {
 const { BOT_NAME, WIKIS, CATEGORY_WIKI_MAP, toggleContribScore, STATUS_OPTIONS } = require("./config.js");
 
 // node-fetch wrapper 
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+let fetchInstance;
+const fetch = async (...args) => {
+    if (!fetchInstance) {
+        const module = await import("node-fetch");
+        fetchInstance = module.default;
+    }
+    return fetchInstance(...args);
+};
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
@@ -399,9 +407,17 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
     
     const contextMessage = messageOrInteraction;
     let typingInterval;
+    let typingTimeout;
     if (!botMessageToEdit && contextMessage.channel?.sendTyping) {
         messageOrInteraction.channel.sendTyping().catch(() => {});
         typingInterval = setInterval(() => messageOrInteraction.channel.sendTyping().catch(() => {}), 8000);
+        // Safety timeout to clear typing after 30 seconds
+        typingTimeout = setTimeout(() => {
+            if (typingInterval) {
+                clearInterval(typingInterval);
+                typingInterval = null;
+            }
+        }, 30000);
     }
 
     try {
@@ -413,14 +429,15 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
             sectionName = section.trim();
         }
 
-        const canonical = await findCanonicalTitle(rawPageName, wikiConfig);
-        
-        if (canonical) {
-            let content = null;
-            let displayTitle = canonical;
-            let gallery = null;
+        let content = null;
+        let displayTitle = null;
+        let gallery = null;
+        let imageUrl = null;
+        let canonical = null;
 
-            if (sectionName) {
+        if (sectionName) {
+            canonical = await findCanonicalTitle(rawPageName, wikiConfig);
+            if (canonical) {
                 const sectionData = await getSectionContent(canonical, sectionName, wikiConfig);
                 if (sectionData) {
                     content = sectionData.content;
@@ -430,28 +447,26 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
                     content = "No content available.";
                     displayTitle = `${canonical}#${sectionName}`;
                 }
-            } else {
-                content = await getLeadSection(canonical, wikiConfig);
-            }
 
+                // For sections, we still might want the page image
+                // Use a lighter query or just getPageData if not too heavy
+                const pageData = await getPageData(canonical, wikiConfig);
+                imageUrl = pageData?.imageUrl;
+            }
+        } else {
+            const pageData = await getPageData(rawPageName, wikiConfig);
+            if (pageData) {
+                canonical = pageData.canonical;
+                content = pageData.extract;
+                imageUrl = pageData.imageUrl;
+                displayTitle = canonical;
+            }
+        }
+
+        if (canonical) {
             if (!content) {
                 content = "No content available.";
             }
-
-            // Fetch Image
-            const fetchPageImage = async (title) => {
-                try {
-                    const imageRes = await fetch(`${wikiConfig.apiEndpoint}?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&pithumbsize=512&format=json`);
-                    const imageJson = await imageRes.json();
-                    const pages = imageJson.query?.pages;
-                    const first = pages ? Object.values(pages)[0] : null;
-                    const src = first?.thumbnail?.source || null;
-                    return getFullSizeImageUrl(src);
-                } catch (err) {
-                    return null;
-                }
-            };
-            const imageUrl = await fetchPageImage(canonical);
 
             const container = buildPageEmbed(displayTitle, content.slice(0, 1000), imageUrl, wikiConfig, gallery);
             
@@ -469,6 +484,7 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
         console.error("Error handling request:", err);
     } finally {
         if (typingInterval) clearInterval(typingInterval);
+        if (typingTimeout) clearTimeout(typingTimeout);
     }
 }
 
@@ -511,6 +527,7 @@ client.on("messageCreate", async (message) => {
 
 client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (newMessage.author.bot) return;
+    if (oldMessage.content === newMessage.content) return;
     if (!responseMap.has(newMessage.id)) return;
 
     const res = getWikiAndPage(newMessage.content, newMessage.channel.parentId);
@@ -551,22 +568,6 @@ client.on("messageReactionAdd", async (reaction, user) => {
 
         let originalAuthorId = botToAuthorMap.get(message.id);
 
-        if (!originalAuthorId) {
-            // fallback to responseMap for older messages or if map missed it
-            for (const [userMsgId, botMsgId] of responseMap.entries()) {
-                if (botMsgId === message.id) {
-                    try {
-                        const userMsg = await message.channel.messages.fetch(userMsgId);
-                        originalAuthorId = userMsg.author.id;
-                        // Cache it for next time
-                        botToAuthorMap.set(botMsgId, originalAuthorId);
-                    } catch (err) {
-                        console.warn(`Failed to fetch original user message ${userMsgId} for bot message ${botMsgId}:`, err);
-                    }
-                    break;
-                }
-            }
-        }
 
         if (!originalAuthorId && message.reference) {
             try {
