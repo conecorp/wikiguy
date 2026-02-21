@@ -353,7 +353,8 @@ async function getSectionContent(pageTitle, sectionName, wikiConfig) {
         $('ul.gallery .gallerybox').each((i, el) => {
             const $el = $(el);
             const img = $el.find('img').first();
-            let src = img.attr('src');
+            const video = $el.find('video').first();
+            let src = img.attr('src') || video.attr('src') || video.find('source').first().attr('src');
 
             if (src) {
                 if (src.startsWith('//')) src = 'https:' + src;
