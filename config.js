@@ -1,5 +1,5 @@
 // --- WIKI CONFIGURATION ---
-const BOT_NAME = "Orbital"; 
+const BOT_NAME = "Wiki Guy"; 
 
 const WIKIS = {
     "super-blox-64": {
@@ -51,6 +51,13 @@ const STATUS_OPTIONS = [
     { type: 4, text: "⋆｡𖦹°⭒˚｡⋆" },
     { type: 4, text: "✶⋆.˚" },
     { type: 4, text: "°˖➴" },
+    { type: 0, text: "SUPER BLOX 64!" },
+    { type: 0, text: "Superstar Racers" },
+    { type: 0, text: "A Block's Journey" },
+    { type: 5, text: "SUPER BLOX 64!" },
+    { type: 5, text: "Superstar Racers" },
+    { type: 5, text: "A Block's Journey" },
+    { type: 3, text: "A Block's Journey teaser trailer" },
 ];
 
 module.exports = {
