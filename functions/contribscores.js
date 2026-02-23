@@ -79,20 +79,33 @@ async function handleContribScoresRequest(interaction, { toggleContribScore, WIK
        return;
     }
 
-    await interaction.deferReply();
-    const result = await getContributionScores(wikiConfig);
-
-    if (result.error) {
-        await interaction.editReply({ content: result.error });
-    } else {
-        const container = buildPageEmbed(result.title, result.result, null, wikiConfig);
-        const response = await interaction.editReply({
-            components: [container],
-            flags: MessageFlags.IsComponentsV2
-        });
-        if (response && response.id) {
-            botToAuthorMap.set(response.id, interaction.user.id);
-            pruneMap(botToAuthorMap);
+    try {
+        await interaction.deferReply();
+        const result = await getContributionScores(wikiConfig);
+        
+        if (result.error) {
+            await interaction.editReply({ content: result.error });
+        } else {
+            const container = buildPageEmbed(result.title, result.result, null, wikiConfig);
+            const response = await interaction.editReply({
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+            });
+            if (response && response.id) {
+                botToAuthorMap.set(response.id, interaction.user.id);
+                pruneMap(botToAuthorMap);
+            }
+        }
+    } catch (err) {
+        console.error("Error in handleContribScoresRequest:", err);
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: "An error occurred while fetching contribution scores." });
+            } else {
+                await interaction.reply({ content: "An error occurred while fetching contribution scores.", ephemeral: true });
+            }
+        } catch (secondaryErr) {
+            console.error("Failed to send error reply:", secondaryErr);
         }
     }
 }
