@@ -39,7 +39,7 @@ const commands = [
             },
             {
                 name: 'file',
-                description: 'Search for a wiki file',
+                description: 'Search for a wiki file (provide only page OR file)',
                 type: 3, // STRING
                 required: false,
                 autocomplete: true

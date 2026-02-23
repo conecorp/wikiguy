@@ -10,6 +10,7 @@ const {
     toggleContribScore,
     CATEGORY_WIKI_MAP
 } = require("../config.js");
+const { fetch } = require("./utils.js");
 
 const {
     ContainerBuilder,
@@ -23,15 +24,6 @@ const {
     MessageFlags
 } = require("discord.js");
 
-// node-fetch wrapper
-let fetchInstance;
-const fetch = async (...args) => {
-    if (!fetchInstance) {
-        const module = await import("node-fetch");
-        fetchInstance = module.default;
-    }
-    return fetchInstance(...args);
-};
 
 const responseMap = new Map();
 const botToAuthorMap = new Map();
@@ -326,6 +318,18 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
 
     } catch (err) {
         console.error("Error handling request:", err);
+        const errorMsg = { content: "An error occurred while processing your request.", ephemeral: true };
+        if (isInteraction(messageOrInteraction)) {
+            if (messageOrInteraction.replied) {
+                await messageOrInteraction.followUp(errorMsg).catch(() => {});
+            } else if (messageOrInteraction.deferred) {
+                await messageOrInteraction.editReply(errorMsg).catch(() => {});
+            } else {
+                await messageOrInteraction.reply(errorMsg).catch(() => {});
+            }
+        } else {
+            await messageOrInteraction.reply(errorMsg).catch(() => {});
+        }
     } finally {
         if (typingInterval) clearInterval(typingInterval);
         if (typingTimeout) clearTimeout(typingTimeout);
@@ -360,6 +364,12 @@ async function handleInteraction(interaction) {
         const wikiKey = interaction.options.getString('wiki');
         const pageName = interaction.options.getString('page');
         const fileName = interaction.options.getString('file');
+
+        if (pageName && fileName) {
+            await interaction.reply({ content: "Please provide only a page OR a file, not both.", ephemeral: true }).catch(() => {});
+            return;
+        }
+
         const wikiConfig = WIKIS[wikiKey];
 
         if (!wikiConfig) {

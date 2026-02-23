@@ -100,7 +100,24 @@ client.on("messageCreate", async (message) => {
 });
 
 client.on("messageUpdate", async (oldMessage, newMessage) => {
-    if (newMessage.author.bot) return;
+    if (newMessage.partial) {
+        try {
+            await newMessage.fetch();
+        } catch (err) {
+            console.warn("Failed to fetch updated message:", err.message);
+            return;
+        }
+    }
+
+    if (oldMessage.partial) {
+        try {
+            await oldMessage.fetch();
+        } catch (err) {
+            console.warn("Failed to fetch old message content for update comparison:", err.message);
+        }
+    }
+
+    if (newMessage.author?.bot) return;
     if (oldMessage.content === newMessage.content) return;
     if (!responseMap.has(newMessage.id)) return;
 

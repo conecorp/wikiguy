@@ -1,11 +1,4 @@
-let fetchInstance;
-const fetch = async (...args) => {
-    if (!fetchInstance) {
-        const module = await import("node-fetch");
-        fetchInstance = module.default;
-    }
-    return fetchInstance(...args);
-};
+const { fetch } = require("./utils.js");
 
 async function getContributionScores(wikiConfig) {
     try {
