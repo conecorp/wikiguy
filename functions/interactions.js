@@ -338,7 +338,7 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
 
 async function handleInteraction(interaction) {
     if (interaction.isAutocomplete()) {
-        if (interaction.commandName === 'wiki') {
+        if (interaction.commandName === 'parse' || interaction.commandName === 'wiki') {
             const focusedOption = interaction.options.getFocused(true);
             const wikiKey = interaction.options.getString('wiki');
             const wikiConfig = WIKIS[wikiKey];
@@ -347,7 +347,7 @@ async function handleInteraction(interaction) {
                 return interaction.respond([]).catch(() => {});
             }
 
-            const listType = focusedOption.name === 'page' ? 'allpages' : (focusedOption.name === 'file' ? 'allimages' : null);
+            const listType = (focusedOption.name === 'page') ? 'allpages' : (focusedOption.name === 'file' ? 'allimages' : null);
             if (!listType) return interaction.respond([]).catch(() => {});
 
             const choices = await getAutocompleteChoices(wikiConfig, listType, focusedOption.value);
@@ -362,14 +362,39 @@ async function handleInteraction(interaction) {
         await handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags });
     } else if (interaction.commandName === 'wiki') {
         const wikiKey = interaction.options.getString('wiki');
-        const pageName = interaction.options.getString('page');
-        const fileName = interaction.options.getString('file');
+        const wikiConfig = WIKIS[wikiKey];
 
-        if (pageName && fileName) {
-            await interaction.reply({ content: "Please provide only a page OR a file, not both.", ephemeral: true }).catch(() => {});
+        if (!wikiConfig) {
+            await interaction.reply({ content: 'Unknown wiki selection.', ephemeral: true }).catch(() => {});
             return;
         }
 
+        try {
+            if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
+
+            // Just the wiki link, per user request
+            const response = await interaction.editReply({
+                content: wikiConfig.baseUrl
+            });
+
+            if (response && response.id) {
+                botToAuthorMap.set(response.id, interaction.user.id);
+                pruneMap(botToAuthorMap);
+            }
+        } catch (err) {
+            console.error(`Error executing wiki command:`, err);
+            const errorMsg = { content: "An error occurred while executing the command.", ephemeral: true };
+            if (interaction.replied) {
+                await interaction.followUp(errorMsg).catch(() => {});
+            } else if (interaction.deferred) {
+                await interaction.editReply({ content: errorMsg.content }).catch(() => {});
+            } else {
+                await interaction.reply(errorMsg).catch(() => {});
+            }
+        }
+    } else if (interaction.commandName === 'parse') {
+        const subCommand = interaction.options.getSubcommand();
+        const wikiKey = interaction.options.getString('wiki');
         const wikiConfig = WIKIS[wikiKey];
 
         if (!wikiConfig) {
@@ -381,18 +406,12 @@ async function handleInteraction(interaction) {
             if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
 
             let response;
-            if (pageName) {
+            if (subCommand === 'page') {
+                const pageName = interaction.options.getString('page');
                 response = await handleUserRequest(wikiConfig, pageName, interaction);
-            } else if (fileName) {
+            } else if (subCommand === 'file') {
+                const fileName = interaction.options.getString('file');
                 response = await handleFileRequest(wikiConfig, fileName, interaction);
-            } else {
-                // Just the wiki link
-                const container = buildPageEmbed(wikiConfig.name, `Welcome to the ${wikiConfig.name} Wiki!`, null, wikiConfig);
-                response = await interaction.editReply({
-                    content: `Here is a link to the [${wikiConfig.name} Wiki](<${wikiConfig.baseUrl}>).`,
-                    components: [container],
-                    flags: MessageFlags.IsComponentsV2
-                });
             }
 
             if (response && response.id) {
@@ -400,7 +419,7 @@ async function handleInteraction(interaction) {
                 pruneMap(botToAuthorMap);
             }
         } catch (err) {
-            console.error(`Error executing wiki command:`, err);
+            console.error(`Error executing parse command:`, err);
             const errorMsg = { content: "An error occurred while executing the command.", ephemeral: true };
             if (interaction.replied) {
                 await interaction.followUp(errorMsg).catch(() => {});
