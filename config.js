@@ -59,7 +59,8 @@ const STATUS_OPTIONS = [
     { type: 5, text: "Superstar Racers" },
     { type: 5, text: "A Block's Journey" },
     { type: 3, text: "A Block's Journey teaser trailer" },
-];
+    { type: 4, text: "edit your message and my embed will too!" },
+    { type: 4, text: "react with :wastebasket: on my messages & i'll delete!" },
 
 module.exports = {
     BOT_NAME,
