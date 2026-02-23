@@ -1,11 +1,4 @@
-let fetchInstance;
-const fetch = async (...args) => {
-    if (!fetchInstance) {
-        const module = await import("node-fetch");
-        fetchInstance = module.default;
-    }
-    return fetchInstance(...args);
-};
+const { fetch } = require("./utils.js");
 
 async function getContributionScores(wikiConfig) {
     try {
@@ -73,4 +66,48 @@ async function getContributionScores(wikiConfig) {
     }
 }
 
-module.exports = { getContributionScores };
+async function handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags }) {
+    if (!toggleContribScore) {
+        await interaction.reply({ content: 'Contribution scores are currently disabled.', ephemeral: true });
+        return;
+    }
+    const wikiKey = interaction.options.getString('wiki');
+    const wikiConfig = WIKIS[wikiKey];
+
+    if (!wikiConfig) {
+       await interaction.reply({ content: 'Unknown wiki selection.', ephemeral: true });
+       return;
+    }
+
+    try {
+        await interaction.deferReply();
+        const result = await getContributionScores(wikiConfig);
+        
+        if (result.error) {
+            await interaction.editReply({ content: result.error });
+        } else {
+            const container = buildPageEmbed(result.title, result.result, null, wikiConfig);
+            const response = await interaction.editReply({
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+            });
+            if (response && response.id) {
+                botToAuthorMap.set(response.id, interaction.user.id);
+                pruneMap(botToAuthorMap);
+            }
+        }
+    } catch (err) {
+        console.error("Error in handleContribScoresRequest:", err);
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: "An error occurred while fetching contribution scores." });
+            } else {
+                await interaction.reply({ content: "An error occurred while fetching contribution scores.", ephemeral: true });
+            }
+        } catch (secondaryErr) {
+            console.error("Failed to send error reply:", secondaryErr);
+        }
+    }
+}
+
+module.exports = { getContributionScores, handleContribScoresRequest };
