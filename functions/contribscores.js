@@ -73,4 +73,35 @@ async function getContributionScores(wikiConfig) {
     }
 }
 
-module.exports = { getContributionScores };
+async function handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags }) {
+    if (!toggleContribScore) {
+        await interaction.reply({ content: 'Contribution scores are currently disabled.', ephemeral: true });
+        return;
+    }
+    const wikiKey = interaction.options.getString('wiki');
+    const wikiConfig = WIKIS[wikiKey];
+
+    if (!wikiConfig) {
+       await interaction.reply({ content: 'Unknown wiki selection.', ephemeral: true });
+       return;
+    }
+
+    await interaction.deferReply();
+    const result = await getContributionScores(wikiConfig);
+
+    if (result.error) {
+        await interaction.editReply({ content: result.error });
+    } else {
+        const container = buildPageEmbed(result.title, result.result, null, wikiConfig);
+        const response = await interaction.editReply({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2
+        });
+        if (response && response.id) {
+            botToAuthorMap.set(response.id, interaction.user.id);
+            pruneMap(botToAuthorMap);
+        }
+    }
+}
+
+module.exports = { getContributionScores, handleContribScoresRequest };

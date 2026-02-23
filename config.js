@@ -35,6 +35,7 @@ const CATEGORY_WIKI_MAP = {
 };
 
 const toggleContribScore = true;
+const STATUS_INTERVAL_MS = 5 * 60 * 1000;
 
 // --- DISCORD STATUSES ---
 const STATUS_OPTIONS = [
@@ -65,5 +66,6 @@ module.exports = {
     WIKIS,
     CATEGORY_WIKI_MAP,
     toggleContribScore,
+    STATUS_INTERVAL_MS,
     STATUS_OPTIONS
 };
