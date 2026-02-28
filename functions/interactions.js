@@ -147,11 +147,7 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
             const fallbackImage = "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png";
             const finalImageUrl = (!hasGallery && typeof imageUrl === "string" && imageUrl.trim() !== "") ? imageUrl : fallbackImage;
 
-            try {
-                mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
-            } catch (err) {
-                console.warn("Failed to set thumbnail accessory:", err.message);
-            }
+            mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
 
             container.addSectionComponents(mainSection);
         }

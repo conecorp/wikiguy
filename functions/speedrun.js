@@ -98,6 +98,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         const container = new ContainerBuilder();
         const section = new SectionBuilder();
         section.addTextDisplayComponents([new TextDisplayBuilder().setContent(description)]);
+        section.setThumbnailAccessory(thumbnail => thumbnail.setURL("https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"));
 
         const row = new ActionRowBuilder();
         row.addComponents(
