@@ -75,10 +75,15 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         const categoryName = leaderboard.category.data.name;
         const levelName = leaderboard.level?.data?.name;
 
-        let titleLine = `## ${game.name}`;
-        if (levelName) titleLine = `## ${levelName}\n`;
+        const mainTitle = levelName ? levelName : game.name;
+        let titleLine = `## ${mainTitle}\n`;
         titleLine += `-# ${categoryName}`;
-        titleLine += ` @ ${game.name}\n`;
+        
+        if (levelName) {
+            titleLine += ` @ ${game.name}`;
+        }
+        
+        titleLine += `\n`;
 
         let description = titleLine;
 
