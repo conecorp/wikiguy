@@ -28,7 +28,7 @@ const SB64_CATEGORIES = [
     { name: 'W4 Hub + Freezy Fields', value: SB64_CATEGORY_IDS.W4_HUB },
     { name: 'W5 Hub + Mechanical Museum', value: SB64_CATEGORY_IDS.W5_HUB },
     { name: 'Starburst Galaxy', value: SB64_CATEGORY_IDS.STARBURST_GALAXY },
-    { name: 'All Deluxe Challenges', value: SB64_CATEGORY_IDS.ALL_DELUXE }
+    { name: 'All deluxe challenges', value: SB64_CATEGORY_IDS.ALL_DELUXE }
 ];
 
 const SR_CATEGORY_IDS = {
@@ -38,9 +38,9 @@ const SR_CATEGORY_IDS = {
 };
 
 const SR_CATEGORIES = [
-    { name: 'All Maps!', value: SR_CATEGORY_IDS.ALL_MAPS },
-    { name: 'Individual Levels (Recode)', value: SR_CATEGORY_IDS.INDIVIDUAL_LEVELS_RECODE },
-    { name: 'Individual Levels (Legacy)', value: SR_CATEGORY_IDS.INDIVIDUAL_LEVELS_LEGACY }
+    { name: 'All maps', value: SR_CATEGORY_IDS.ALL_MAPS },
+    { name: 'Individual Recode maps', value: SR_CATEGORY_IDS.INDIVIDUAL_LEVELS_RECODE },
+    { name: 'Individual pre-rewrite maps', value: SR_CATEGORY_IDS.INDIVIDUAL_LEVELS_LEGACY }
 ];
 
 const SR_LEVEL_IDS = {
@@ -86,9 +86,9 @@ const SR_LEVELS = [
     { name: 'Sweet Speedway', value: SR_LEVEL_IDS.SWEET_SPEEDWAY },
     { name: 'Underwater Highway', value: SR_LEVEL_IDS.UNDERWATER_HIGHWAY },
     { name: 'Winter Wonderland', value: SR_LEVEL_IDS.WINTER_WONDERLAND },
-    { name: '(Lobby) Easy Section', value: SR_LEVEL_IDS.LOBBY_EASY },
-    { name: '(Lobby) Medium Section', value: SR_LEVEL_IDS.LOBBY_MEDIUM },
-    { name: '(Lobby) Hard Section', value: SR_LEVEL_IDS.LOBBY_HARD }
+    { name: 'Lobby Easy Time Trial', value: SR_LEVEL_IDS.LOBBY_EASY },
+    { name: 'Lobby Medium Time Trial', value: SR_LEVEL_IDS.LOBBY_MEDIUM },
+    { name: 'Lobby Hard Time Trial', value: SR_LEVEL_IDS.LOBBY_HARD }
 ];
 
 const commands = [
