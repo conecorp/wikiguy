@@ -113,7 +113,12 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
 
     } catch (err) {
         console.error("Error fetching speedrun leaderboard:", err);
-        await interaction.editReply({ content: "An error occurred while fetching the leaderboard." });
+        const errorMsg = { content: "An error occurred while fetching the leaderboard." };
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply(errorMsg).catch(() => {});
+        } else {
+            await interaction.reply({ ...errorMsg, ephemeral: true }).catch(() => {});
+        }
     }
 }
 
