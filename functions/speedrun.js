@@ -21,12 +21,9 @@ function formatTime(seconds) {
     if (h > 0) parts.push(`${h}h`);
     if (m > 0 || h > 0) parts.push(`${m}m`);
 
+    // Removed the (s % 1 === 0) check to force 3 decimal places always
     if (s > 0 || parts.length === 0) {
-        if (s % 1 === 0) {
-            parts.push(`${s}s`);
-        } else {
-            parts.push(`${s.toFixed(3)}s`);
-        }
+        parts.push(`${s.toFixed(3)}s`);
     }
 
     return parts.join(" ");
@@ -80,7 +77,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
 
         let titleLine = `## ${game.name}`;
         if (levelName) titleLine = `## ${levelName}\n`;
-        titleLine += `${categoryName}`;
+        titleLine += `-# ${categoryName}`;
         titleLine += ` @ ${game.name}\n`;
 
         let description = titleLine;
