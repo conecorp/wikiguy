@@ -361,15 +361,22 @@ async function handleInteraction(interaction) {
 
     if (interaction.commandName === 'lb') {
         const subCommand = interaction.options.getSubcommand();
+        let response;
         if (subCommand === 'contribs') {
             await handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags });
+            return;
         } else if (subCommand === 'sb64') {
             const categoryId = interaction.options.getString('category');
-            await handleSpeedrunRequest(interaction, 'sb64', categoryId);
+            response = await handleSpeedrunRequest(interaction, 'sb64', categoryId);
         } else if (subCommand === 'sr') {
             const categoryId = interaction.options.getString('category');
             const levelId = interaction.options.getString('level');
-            await handleSpeedrunRequest(interaction, 'sr', categoryId, levelId);
+            response = await handleSpeedrunRequest(interaction, 'sr', categoryId, levelId);
+        }
+
+        if (response && response.id) {
+            botToAuthorMap.set(response.id, interaction.user.id);
+            pruneMap(botToAuthorMap);
         }
     } else if (interaction.commandName === 'wiki') {
         const wikiKey = interaction.options.getString('wiki');

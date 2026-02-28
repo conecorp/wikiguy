@@ -39,14 +39,18 @@ async function getLeaderboardData(gameId, categoryId, levelId = null) {
     } else {
         url += `/category/${categoryId}`;
     }
-    url += `?top=10&embed=players,category,level`;
+    url += `?top=10&embed=players,category${levelId ? ',level' : ''}`;
 
     const res = await fetch(url, {
         headers: { "User-Agent": "DiscordBot/Orbital" },
         signal: AbortSignal.timeout(5000)
     });
     if (!res.ok) {
-        throw new Error(`Speedrun.com API returned ${res.status}`);
+        const errorData = await res.json().catch(() => ({}));
+        const message = errorData.message || `Speedrun.com API returned ${res.status}`;
+        const err = new Error(message);
+        err.status = res.status;
+        throw err;
     }
     return await res.json();
 }
@@ -106,14 +110,15 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         container.addSectionComponents(section);
         container.addActionRowComponents(row);
 
-        await interaction.editReply({
+        return await interaction.editReply({
             components: [container],
             flags: MessageFlags.IsComponentsV2
         });
 
     } catch (err) {
         console.error("Error fetching speedrun leaderboard:", err);
-        const errorMsg = { content: "An error occurred while fetching the leaderboard." };
+        const errorMessage = err.status === 400 ? `Speedrun.com: ${err.message}` : "An error occurred while fetching the leaderboard.";
+        const errorMsg = { content: errorMessage };
         if (interaction.deferred || interaction.replied) {
             await interaction.editReply(errorMsg).catch(() => {});
         } else {
