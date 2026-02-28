@@ -41,7 +41,10 @@ async function getLeaderboardData(gameId, categoryId, levelId = null) {
     }
     url += `?top=10&embed=players,category,level`;
 
-    const res = await fetch(url, { headers: { "User-Agent": "DiscordBot/Orbital" } });
+    const res = await fetch(url, {
+        headers: { "User-Agent": "DiscordBot/Orbital" },
+        signal: AbortSignal.timeout(5000)
+    });
     if (!res.ok) {
         throw new Error(`Speedrun.com API returned ${res.status}`);
     }
