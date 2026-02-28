@@ -4,9 +4,9 @@ const BOT_NAME = "Wiki Guy";
 const WIKIS = {
     "super-blox-64": {
         name: "SUPER BLOX 64!",
-        baseUrl: "https://superblox64.wiki",
-        apiEndpoint: "https://superblox64.wiki/w/api.php",
-        articlePath: "https://superblox64.wiki/",
+        baseUrl: "https://sb64.conecorp.cc",
+        apiEndpoint: "https://sb64.conecorp.cc/w/api.php",
+        articlePath: "https://sb64.conecorp.cc/",
         prefix: "sb64",
         emoji: "1472436401680158741"
     },
@@ -20,9 +20,9 @@ const WIKIS = {
     },
     "a-blocks-journey": {
         name: "A Block's Journey",
-        baseUrl: "https://ablocksjourney.wiki",
-        apiEndpoint: "https://ablocksjourney.wiki/w/api.php",
-        articlePath: "https://ablocksjourney.wiki/",
+        baseUrl: "https://abj.conecorp.cc",
+        apiEndpoint: "https://abj.conecorp.cc/w/api.php",
+        articlePath: "https://abj.conecorp.cc/",
         prefix: "abj",
         emoji: "1472436415760568460"
     }
