@@ -92,7 +92,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
                 return p.name || "Guest";
             }).join(", ");
             const time = formatTime(run.times.primary_t);
-            description += `${place}. **${players}** - \`${time}\` [🔗](${run.weblink})\n`;
+            description += `${place}. <:flag:1477323785366540439> \`${time}\`    [${players}](${run.weblink})\n`;
         });
 
         const container = new ContainerBuilder();
