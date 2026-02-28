@@ -12,9 +12,9 @@ const WIKIS = {
     },
     "superstar-racers": {
         name: "Superstar Racers",
-        baseUrl: "https://superstarracers.wiki",
-        apiEndpoint: "https://superstarracers.wiki/w/api.php",
-        articlePath: "https://superstarracers.wiki/",
+        baseUrl: "https://sr.conecorp.cc",
+        apiEndpoint: "https://sr.conecorp.cc/w/api.php",
+        articlePath: "https://sr.conecorp.cc/",
         prefix: "sr",
         emoji: "1472436382998728714"
     },
