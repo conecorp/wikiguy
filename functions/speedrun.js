@@ -79,8 +79,9 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         const levelName = leaderboard.level?.data?.name;
 
         let titleLine = `## ${game.name}`;
-        if (levelName) titleLine += ` - ${levelName}`;
-        titleLine += ` (${categoryName})\n`;
+        if (levelName) titleLine = `## ${levelName}\n`;
+        titleLine += `${categoryName}`;
+        titleLine += ` @ ${game.name}\n`;
 
         let description = titleLine;
 
@@ -90,9 +91,9 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
             const players = run.players.map(p => {
                 if (p.rel === "user") return playersMap.get(p.id) || "Unknown";
                 return p.name || "Guest";
-            }).join(", ");
+            }).join(" @");
             const time = formatTime(run.times.primary_t);
-            description += `${place}. <:flag:1477323785366540439> \`${time}\`    [${players}](${run.weblink})\n`;
+            description += `${place}. <:flag:1477323785366540439> \`${time}\`    [**@${players}**](${run.weblink})\n`;
         });
 
         const container = new ContainerBuilder();
@@ -103,7 +104,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         const row = new ActionRowBuilder();
         row.addComponents(
             new ButtonBuilder()
-                .setLabel("View Full Leaderboard")
+                .setLabel("View full leaderboard")
                 .setStyle(ButtonStyle.Link)
                 .setURL(leaderboard.weblink)
         );
