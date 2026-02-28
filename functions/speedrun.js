@@ -120,9 +120,9 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         const errorMessage = err.status === 400 ? `Speedrun.com: ${err.message}` : "An error occurred while fetching the leaderboard.";
         const errorMsg = { content: errorMessage };
         if (interaction.deferred || interaction.replied) {
-            await interaction.editReply(errorMsg).catch(() => {});
+            return await interaction.editReply(errorMsg).catch(() => null);
         } else {
-            await interaction.reply({ ...errorMsg, ephemeral: true }).catch(() => {});
+            return await interaction.reply({ ...errorMsg, ephemeral: true, fetchReply: true }).catch(() => null);
         }
     }
 }
