@@ -5,6 +5,7 @@ const {
 } = require("./parse_page.js");
 const { handleFileRequest } = require("./parse_file.js");
 const { handleContribScoresRequest } = require("./contribscores.js");
+const { handleSpeedrunRequest } = require("./speedrun.js");
 const {
     WIKIS,
     toggleContribScore,
@@ -358,8 +359,18 @@ async function handleInteraction(interaction) {
 
     if (!interaction.isCommand()) return;
 
-    if (interaction.commandName === 'contribscores') {
-        await handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags });
+    if (interaction.commandName === 'lb') {
+        const subCommand = interaction.options.getSubcommand();
+        if (subCommand === 'contribs') {
+            await handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags });
+        } else if (subCommand === 'sb64') {
+            const categoryId = interaction.options.getString('category');
+            await handleSpeedrunRequest(interaction, 'sb64', categoryId);
+        } else if (subCommand === 'sr') {
+            const categoryId = interaction.options.getString('category');
+            const levelId = interaction.options.getString('level');
+            await handleSpeedrunRequest(interaction, 'sr', categoryId, levelId);
+        }
     } else if (interaction.commandName === 'wiki') {
         const wikiKey = interaction.options.getString('wiki');
         const wikiConfig = WIKIS[wikiKey];
