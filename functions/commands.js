@@ -53,7 +53,7 @@ const commands = [
                     },
                     {
                         name: 'level',
-                        description: 'The level to view (for Individual Levels)',
+                        description: 'The level to view (only works with Individual Levels categories)',
                         type: 3, // STRING
                         required: false,
                         choices: [
