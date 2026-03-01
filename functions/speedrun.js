@@ -113,7 +113,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
             titleLine += ` @ ${game.name}`;
         }
         
-        titleLine += `\n`;
+        titleLine += `\n\n`;
 
         let description = titleLine;
 
