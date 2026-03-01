@@ -42,14 +42,7 @@ const SB64_VARIABLES = {
 
 const SB64_CHARACTER_CHOICES = [
     { name: 'Bloxxer', value: 'q65xzdvl' },
-    { name: 'Bloxera', value: 'qj74x37q' },
-    { name: 'Both', value: '10v9vdjl' }
-];
-
-const SB64_GLITCHES_CHOICES = [
-    { name: 'Glitchless', value: 'lmo4g581' },
-    // { name: 'NMG', value: '1w4d5ymq' },
-    { name: 'Glitches', value: 'qox3r45q' }
+    { name: 'Bloxera', value: 'qj74x37q' }
 ];
 
 const SR_CATEGORY_IDS = {
@@ -117,7 +110,6 @@ const SR_VARIABLES = {
 };
 
 const SR_EVENTS_CHOICES = [
-    { name: 'No Events', value: 'qkem56nq' },
     { name: 'Raised Speed Cap', value: 'q75rpkv1' },
     { name: 'Low Gravity', value: 'qoxd952q' },
     { name: 'Raised Speed Cap + Low Gravity', value: 'qyzog9d1' }
@@ -150,9 +142,8 @@ const commands = [
                     {
                         name: 'glitches',
                         description: 'Filter by glitch category',
-                        type: 3, // STRING
-                        required: false,
-                        choices: SB64_GLITCHES_CHOICES
+                        type: 5, // BOOLEAN
+                        required: false
                     }
                 ]
             },

@@ -367,21 +367,21 @@ async function handleInteraction(interaction) {
             return;
         } else if (subCommand === 'sb64') {
             const categoryId = interaction.options.getString('category');
-            const character = interaction.options.getString('character');
-            const glitches = interaction.options.getString('glitches');
+            const character = interaction.options.getString('character') || '10v9vdjl'; // Default to Both
+            const glitches = interaction.options.getBoolean('glitches');
 
             const variables = {};
-            if (character) variables[SB64_VARIABLES.CHARACTER] = character;
-            if (glitches) variables[SB64_VARIABLES.GLITCHES] = glitches;
+            variables[SB64_VARIABLES.CHARACTER] = character;
+            variables[SB64_VARIABLES.GLITCHES] = glitches ? 'qox3r45q' : 'lmo4g581'; // true = Glitches, false/null = Glitchless
 
             response = await handleSpeedrunRequest(interaction, 'sb64', categoryId, null, variables);
         } else if (subCommand === 'sr') {
             const categoryId = interaction.options.getString('category');
             const levelId = interaction.options.getString('level');
-            const events = interaction.options.getString('events');
+            const events = interaction.options.getString('events') || 'qkem56nq'; // Default to No Events
 
             const variables = {};
-            if (events) variables[SR_VARIABLES.EVENTS] = events;
+            variables[SR_VARIABLES.EVENTS] = events;
 
             response = await handleSpeedrunRequest(interaction, 'sr', categoryId, levelId, variables);
         }
