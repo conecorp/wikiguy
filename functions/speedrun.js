@@ -95,11 +95,8 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
 
         if (!leaderboard.runs || leaderboard.runs.length === 0) {
             const noRunsMsg = { content: `No runs found for this category.`, ephemeral: true };
-            if (interaction.deferred || interaction.replied) {
-                await interaction.deleteReply().catch(e => console.warn("Failed to delete reply:", e.message));
-                return await interaction.followUp(noRunsMsg);
-            }
-            return await interaction.reply(noRunsMsg);
+            await interaction.deleteReply().catch(e => console.warn("Failed to delete reply:", e.message));
+            return await interaction.followUp(noRunsMsg);
         }
 
         const forceMinutes = leaderboard.runs.some(runItem => runItem.run.times.primary_t >= 60);
