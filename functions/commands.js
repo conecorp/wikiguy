@@ -26,11 +26,11 @@ const SB64_CATEGORIES = [
     { name: 'Any%', value: SB64_CATEGORY_IDS.ANY_PERCENT },
     { name: '100%', value: SB64_CATEGORY_IDS.HUNDRED_PERCENT },
     { name: '122%', value: SB64_CATEGORY_IDS.HUNDRED_TWENTY_TWO_PERCENT },
-    { name: 'W1 Hub + Breezy Plains', value: SB64_LEVEL_IDS.W1_HUB },
-    { name: 'W2 Hub + Sunshine Beach', value: SB64_LEVEL_IDS.W2_HUB },
-    { name: 'W3 Hub + Sodacan Canyon', value: SB64_LEVEL_IDS.W3_HUB },
-    { name: 'W4 Hub + Freezy Fields', value: SB64_LEVEL_IDS.W4_HUB },
-    { name: 'W5 Hub + Mechanical Museum', value: SB64_LEVEL_IDS.W5_HUB },
+    { name: 'World 1 Hub + Breezy Plains', value: SB64_LEVEL_IDS.W1_HUB },
+    { name: 'World 2 Hub + Sunshine Beach', value: SB64_LEVEL_IDS.W2_HUB },
+    { name: 'World 3 Hub + Sodacan Canyon', value: SB64_LEVEL_IDS.W3_HUB },
+    { name: 'World 4 Hub + Freezy Fields', value: SB64_LEVEL_IDS.W4_HUB },
+    { name: 'World 5 Hub + Mechanical Museum', value: SB64_LEVEL_IDS.W5_HUB },
     { name: 'Starburst Galaxy', value: SB64_LEVEL_IDS.STARBURST_GALAXY },
     { name: 'All deluxe challenges', value: SB64_LEVEL_IDS.ALL_DELUXE }
 ];
@@ -120,7 +120,7 @@ const SR_EVENTS_CHOICES = [
     { name: 'No Events', value: 'qkem56nq' },
     { name: 'Raised Speed Cap', value: 'q75rpkv1' },
     { name: 'Low Gravity', value: 'qoxd952q' },
-    { name: 'RSC + LG', value: 'qyzog9d1' }
+    { name: 'Raised Speed Cap + Low Gravity', value: 'qyzog9d1' }
 ];
 
 const commands = [
@@ -130,7 +130,7 @@ const commands = [
         options: [
             {
                 name: 'sb64',
-                description: 'Super Blox 64 Leaderboard',
+                description: 'SUPER BLOX 64\'s speedrun leaderboard',
                 type: 1, // SUB_COMMAND
                 options: [
                     {
@@ -158,7 +158,7 @@ const commands = [
             },
             {
                 name: 'sr',
-                description: 'Superstar Racers Leaderboard',
+                description: 'Superstar Racers\' speedrun leaderboard',
                 type: 1, // SUB_COMMAND
                 options: [
                     {
@@ -191,7 +191,7 @@ const commands = [
                 options: [
                     {
                         name: 'wiki',
-                        description: 'The wiki to get scores from',
+                        description: 'Select a wiki',
                         type: 3, // STRING
                         required: true,
                         choices: wikiChoices
