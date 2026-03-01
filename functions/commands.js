@@ -15,7 +15,8 @@ const SB64_CATEGORY_IDS = {
     W4_HUB: 'd0k0l3m9',
     W5_HUB: 'w6qvrepd',
     STARBURST_GALAXY: '93q08m2w',
-    ALL_DELUXE: '9gy3mxk9'
+    ALL_DELUXE: '9gy3mxk9',
+    PER_LEVEL_OVERALL: 'q25660vk'
 };
 
 const SB64_CATEGORIES = [
@@ -44,7 +45,6 @@ const SB64_CHARACTER_CHOICES = [
 
 const SB64_GLITCHES_CHOICES = [
     { name: 'Glitchless', value: 'lmo4g581' },
-    { name: 'NMG', value: '1w4d5ymq' },
     { name: 'Glitches', value: 'qox3r45q' }
 ];
 

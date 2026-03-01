@@ -63,7 +63,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
     const game = GAMES[gameKey];
 
     // SB64 Hub categories are actually levels.
-    // Category ID for all per-level categories in SB64 is q25660vk
+    // Category ID for all per-level categories in SB64 is SB64_CATEGORY_IDS.PER_LEVEL_OVERALL
     if (gameKey === 'sb64' && !levelId) {
         const perLevelCategories = [
             SB64_CATEGORY_IDS.W1_HUB,
@@ -76,7 +76,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         ];
         if (perLevelCategories.includes(categoryId)) {
             levelId = categoryId;
-            categoryId = 'q25660vk';
+            categoryId = SB64_CATEGORY_IDS.PER_LEVEL_OVERALL;
         }
     }
 
