@@ -96,7 +96,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         if (!leaderboard.runs || leaderboard.runs.length === 0) {
             const noRunsMsg = { content: `No runs found for this category.`, ephemeral: true };
             if (interaction.deferred || interaction.replied) {
-                await interaction.deleteReply().catch(() => {});
+                await interaction.deleteReply().catch(e => console.warn("Failed to delete reply:", e.message));
                 return await interaction.followUp(noRunsMsg);
             }
             return await interaction.reply(noRunsMsg);
