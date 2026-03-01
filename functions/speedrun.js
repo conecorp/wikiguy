@@ -24,6 +24,11 @@ const GAMES = {
     }
 };
 
+const GAME_WIKI_MAP = {
+    sb64: 'super-blox-64',
+    sr: 'superstar-racers'
+};
+
 function formatTime(seconds, forceMinutes = false) {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -145,7 +150,8 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
             .setStyle(ButtonStyle.Link)
             .setURL(leaderboard.weblink);
 
-        const wikiConfig = WIKIS[gameKey === 'sb64' ? 'super-blox-64' : 'superstar-racers'];
+        const wikiKey = GAME_WIKI_MAP[gameKey];
+        const wikiConfig = WIKIS[wikiKey];
         if (wikiConfig && wikiConfig.emoji) {
             button.setEmoji(wikiConfig.emoji);
         }
@@ -168,7 +174,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
             await interaction.deleteReply().catch(() => {});
             return await interaction.followUp(errorMsg).catch(() => null);
         } else {
-            return await interaction.reply({ ...errorMsg, fetchReply: true }).catch(() => null);
+            return await interaction.reply(errorMsg).catch(() => null);
         }
     }
 }
