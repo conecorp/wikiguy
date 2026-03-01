@@ -1,5 +1,6 @@
 const { fetch } = require("./utils.js");
 const { ContainerBuilder, SectionBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
+const { SB64_CATEGORY_IDS } = require("./commands.js");
 
 const GAMES = {
     sb64: {
@@ -22,10 +23,7 @@ function formatTime(seconds, forceMinutes = false) {
     if (m > 0 || h > 0 || (forceMinutes && h === 0)) parts.push(`${m}m`);
 
     // Removed the (s % 1 === 0) check to force 3 decimal places always
-    if (s > 0 || parts.length === 0 || (forceMinutes && parts.length === 0)) {
-        parts.push(`${s.toFixed(3).padStart(6, '0')}s`);
-    } else if (parts.length > 0) {
-        // If we have hours or minutes, we should still show seconds, possibly with padding
+    if (s > 0 || parts.length > 0 || forceMinutes) {
         parts.push(`${s.toFixed(3).padStart(6, '0')}s`);
     }
 
@@ -43,7 +41,7 @@ async function getLeaderboardData(gameId, categoryId, levelId = null, variables 
 
     for (const [key, value] of Object.entries(variables)) {
         if (value) {
-            url += `&var-${key}=${value}`;
+            url += `&var-${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
         }
     }
 
@@ -68,8 +66,13 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
     // Category ID for all per-level categories in SB64 is q25660vk
     if (gameKey === 'sb64' && !levelId) {
         const perLevelCategories = [
-            '920j3n7d', '9vmyj5q9', 'd406nrq9', 'd0k0l3m9',
-            'w6qvrepd', '93q08m2w', '9gy3mxk9'
+            SB64_CATEGORY_IDS.W1_HUB,
+            SB64_CATEGORY_IDS.W2_HUB,
+            SB64_CATEGORY_IDS.W3_HUB,
+            SB64_CATEGORY_IDS.W4_HUB,
+            SB64_CATEGORY_IDS.W5_HUB,
+            SB64_CATEGORY_IDS.STARBURST_GALAXY,
+            SB64_CATEGORY_IDS.ALL_DELUXE
         ];
         if (perLevelCategories.includes(categoryId)) {
             levelId = categoryId;

@@ -261,6 +261,7 @@ const commands = [
 
 module.exports = {
     commands,
+    SB64_CATEGORY_IDS,
     SB64_VARIABLES,
     SR_VARIABLES
 };
