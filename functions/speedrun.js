@@ -1,15 +1,15 @@
 const { fetch } = require("./utils.js");
 const { ContainerBuilder, SectionBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
-const { SB64_CATEGORY_IDS } = require("./commands.js");
+const { SB64_CATEGORY_IDS, SB64_LEVEL_IDS } = require("./commands.js");
 
 const SB64_PER_LEVEL_CATEGORIES = new Set([
-    SB64_CATEGORY_IDS.W1_HUB,
-    SB64_CATEGORY_IDS.W2_HUB,
-    SB64_CATEGORY_IDS.W3_HUB,
-    SB64_CATEGORY_IDS.W4_HUB,
-    SB64_CATEGORY_IDS.W5_HUB,
-    SB64_CATEGORY_IDS.STARBURST_GALAXY,
-    SB64_CATEGORY_IDS.ALL_DELUXE
+    SB64_LEVEL_IDS.W1_HUB,
+    SB64_LEVEL_IDS.W2_HUB,
+    SB64_LEVEL_IDS.W3_HUB,
+    SB64_LEVEL_IDS.W4_HUB,
+    SB64_LEVEL_IDS.W5_HUB,
+    SB64_LEVEL_IDS.STARBURST_GALAXY,
+    SB64_LEVEL_IDS.ALL_DELUXE
 ]);
 
 const GAMES = {
@@ -73,8 +73,8 @@ async function getLeaderboardData(gameId, categoryId, levelId = null, variables 
 async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId = null, variables = {}) {
     const game = GAMES[gameKey];
 
-    // SB64 Hub categories are actually levels.
-    // Category ID for all per-level categories in SB64 is SB64_CATEGORY_IDS.PER_LEVEL_OVERALL
+    // SB64 per-level categories are actually levels in the SRC API.
+    // The Category ID for all per-level categories in SB64 is SB64_CATEGORY_IDS.PER_LEVEL_OVERALL
     if (gameKey === 'sb64' && !levelId) {
         if (SB64_PER_LEVEL_CATEGORIES.has(categoryId)) {
             levelId = categoryId;

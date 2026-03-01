@@ -9,27 +9,30 @@ const SB64_CATEGORY_IDS = {
     ANY_PERCENT: 'z27jz052',
     HUNDRED_PERCENT: 'jdzzxgxd',
     HUNDRED_TWENTY_TWO_PERCENT: '8244zv32',
+    PER_LEVEL_OVERALL: 'q25660vk'
+};
+
+const SB64_LEVEL_IDS = {
     W1_HUB: '920j3n7d',
     W2_HUB: '9vmyj5q9',
     W3_HUB: 'd406nrq9',
     W4_HUB: 'd0k0l3m9',
     W5_HUB: 'w6qvrepd',
     STARBURST_GALAXY: '93q08m2w',
-    ALL_DELUXE: '9gy3mxk9',
-    PER_LEVEL_OVERALL: 'q25660vk'
+    ALL_DELUXE: '9gy3mxk9'
 };
 
 const SB64_CATEGORIES = [
     { name: 'Any%', value: SB64_CATEGORY_IDS.ANY_PERCENT },
     { name: '100%', value: SB64_CATEGORY_IDS.HUNDRED_PERCENT },
     { name: '122%', value: SB64_CATEGORY_IDS.HUNDRED_TWENTY_TWO_PERCENT },
-    { name: 'W1 Hub + Breezy Plains', value: SB64_CATEGORY_IDS.W1_HUB },
-    { name: 'W2 Hub + Sunshine Beach', value: SB64_CATEGORY_IDS.W2_HUB },
-    { name: 'W3 Hub + Sodacan Canyon', value: SB64_CATEGORY_IDS.W3_HUB },
-    { name: 'W4 Hub + Freezy Fields', value: SB64_CATEGORY_IDS.W4_HUB },
-    { name: 'W5 Hub + Mechanical Museum', value: SB64_CATEGORY_IDS.W5_HUB },
-    { name: 'Starburst Galaxy', value: SB64_CATEGORY_IDS.STARBURST_GALAXY },
-    { name: 'All deluxe challenges', value: SB64_CATEGORY_IDS.ALL_DELUXE }
+    { name: 'W1 Hub + Breezy Plains', value: SB64_LEVEL_IDS.W1_HUB },
+    { name: 'W2 Hub + Sunshine Beach', value: SB64_LEVEL_IDS.W2_HUB },
+    { name: 'W3 Hub + Sodacan Canyon', value: SB64_LEVEL_IDS.W3_HUB },
+    { name: 'W4 Hub + Freezy Fields', value: SB64_LEVEL_IDS.W4_HUB },
+    { name: 'W5 Hub + Mechanical Museum', value: SB64_LEVEL_IDS.W5_HUB },
+    { name: 'Starburst Galaxy', value: SB64_LEVEL_IDS.STARBURST_GALAXY },
+    { name: 'All deluxe challenges', value: SB64_LEVEL_IDS.ALL_DELUXE }
 ];
 
 const SB64_VARIABLES = {
@@ -263,6 +266,7 @@ const commands = [
 module.exports = {
     commands,
     SB64_CATEGORY_IDS,
+    SB64_LEVEL_IDS,
     SB64_VARIABLES,
     SR_VARIABLES
 };
