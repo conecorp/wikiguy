@@ -2,6 +2,16 @@ const { fetch } = require("./utils.js");
 const { ContainerBuilder, SectionBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const { SB64_CATEGORY_IDS } = require("./commands.js");
 
+const SB64_PER_LEVEL_CATEGORIES = new Set([
+    SB64_CATEGORY_IDS.W1_HUB,
+    SB64_CATEGORY_IDS.W2_HUB,
+    SB64_CATEGORY_IDS.W3_HUB,
+    SB64_CATEGORY_IDS.W4_HUB,
+    SB64_CATEGORY_IDS.W5_HUB,
+    SB64_CATEGORY_IDS.STARBURST_GALAXY,
+    SB64_CATEGORY_IDS.ALL_DELUXE
+]);
+
 const GAMES = {
     sb64: {
         id: "9d3wv0w1",
@@ -23,7 +33,8 @@ function formatTime(seconds, forceMinutes = false) {
     if (m > 0 || h > 0 || (forceMinutes && h === 0)) parts.push(`${m}m`);
 
     // Removed the (s % 1 === 0) check to force 3 decimal places always
-    if (s > 0 || parts.length > 0 || forceMinutes) {
+    // Including s >= 0 to ensure seconds are always added
+    if (s >= 0 || parts.length > 0 || forceMinutes) {
         parts.push(`${s.toFixed(3).padStart(6, '0')}s`);
     }
 
@@ -65,16 +76,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
     // SB64 Hub categories are actually levels.
     // Category ID for all per-level categories in SB64 is SB64_CATEGORY_IDS.PER_LEVEL_OVERALL
     if (gameKey === 'sb64' && !levelId) {
-        const perLevelCategories = [
-            SB64_CATEGORY_IDS.W1_HUB,
-            SB64_CATEGORY_IDS.W2_HUB,
-            SB64_CATEGORY_IDS.W3_HUB,
-            SB64_CATEGORY_IDS.W4_HUB,
-            SB64_CATEGORY_IDS.W5_HUB,
-            SB64_CATEGORY_IDS.STARBURST_GALAXY,
-            SB64_CATEGORY_IDS.ALL_DELUXE
-        ];
-        if (perLevelCategories.includes(categoryId)) {
+        if (SB64_PER_LEVEL_CATEGORIES.has(categoryId)) {
             levelId = categoryId;
             categoryId = SB64_CATEGORY_IDS.PER_LEVEL_OVERALL;
         }

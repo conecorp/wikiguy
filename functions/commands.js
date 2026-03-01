@@ -45,6 +45,7 @@ const SB64_CHARACTER_CHOICES = [
 
 const SB64_GLITCHES_CHOICES = [
     { name: 'Glitchless', value: 'lmo4g581' },
+    { name: 'NMG', value: '1w4d5ymq' },
     { name: 'Glitches', value: 'qox3r45q' }
 ];
 
