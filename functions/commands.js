@@ -31,6 +31,23 @@ const SB64_CATEGORIES = [
     { name: 'All deluxe challenges', value: SB64_CATEGORY_IDS.ALL_DELUXE }
 ];
 
+const SB64_VARIABLES = {
+    CHARACTER: 'ylqxg938',
+    GLITCHES: 'gnx6d06n'
+};
+
+const SB64_CHARACTER_CHOICES = [
+    { name: 'Bloxxer', value: 'q65xzdvl' },
+    { name: 'Bloxera', value: 'qj74x37q' },
+    { name: 'Both', value: '10v9vdjl' }
+];
+
+const SB64_GLITCHES_CHOICES = [
+    { name: 'Glitchless', value: 'lmo4g581' },
+    { name: 'NMG', value: '1w4d5ymq' },
+    { name: 'Glitches', value: 'qox3r45q' }
+];
+
 const SR_CATEGORY_IDS = {
     ALL_MAPS: 'rkl63l6k',
     INDIVIDUAL_LEVELS_RECODE: '9d8qwwwd',
@@ -91,6 +108,17 @@ const SR_LEVELS = [
     { name: 'Lobby Hard Time Trial', value: SR_LEVEL_IDS.LOBBY_HARD }
 ];
 
+const SR_VARIABLES = {
+    EVENTS: 'p85y11vl'
+};
+
+const SR_EVENTS_CHOICES = [
+    { name: 'No Events', value: 'qkem56nq' },
+    { name: 'Raised Speed Cap', value: 'q75rpkv1' },
+    { name: 'Low Gravity', value: 'qoxd952q' },
+    { name: 'RSC + LG', value: 'qyzog9d1' }
+];
+
 const commands = [
     {
         name: 'lb',
@@ -107,6 +135,20 @@ const commands = [
                         type: 3, // STRING
                         required: true,
                         choices: SB64_CATEGORIES
+                    },
+                    {
+                        name: 'character',
+                        description: 'Filter by character',
+                        type: 3, // STRING
+                        required: false,
+                        choices: SB64_CHARACTER_CHOICES
+                    },
+                    {
+                        name: 'glitches',
+                        description: 'Filter by glitch category',
+                        type: 3, // STRING
+                        required: false,
+                        choices: SB64_GLITCHES_CHOICES
                     }
                 ]
             },
@@ -128,6 +170,13 @@ const commands = [
                         type: 3, // STRING
                         required: false,
                         choices: SR_LEVELS
+                    },
+                    {
+                        name: 'events',
+                        description: 'Filter by events',
+                        type: 3, // STRING
+                        required: false,
+                        choices: SR_EVENTS_CHOICES
                     }
                 ]
             },
@@ -210,4 +259,8 @@ const commands = [
     }
 ];
 
-module.exports = { commands };
+module.exports = {
+    commands,
+    SB64_VARIABLES,
+    SR_VARIABLES
+};

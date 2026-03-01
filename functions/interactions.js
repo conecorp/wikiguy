@@ -7,6 +7,10 @@ const { handleFileRequest } = require("./parse_file.js");
 const { handleContribScoresRequest } = require("./contribscores.js");
 const { handleSpeedrunRequest } = require("./speedrun.js");
 const {
+    SB64_VARIABLES,
+    SR_VARIABLES
+} = require("./commands.js");
+const {
     WIKIS,
     toggleContribScore,
     CATEGORY_WIKI_MAP
@@ -363,11 +367,23 @@ async function handleInteraction(interaction) {
             return;
         } else if (subCommand === 'sb64') {
             const categoryId = interaction.options.getString('category');
-            response = await handleSpeedrunRequest(interaction, 'sb64', categoryId);
+            const character = interaction.options.getString('character');
+            const glitches = interaction.options.getString('glitches');
+
+            const variables = {};
+            if (character) variables[SB64_VARIABLES.CHARACTER] = character;
+            if (glitches) variables[SB64_VARIABLES.GLITCHES] = glitches;
+
+            response = await handleSpeedrunRequest(interaction, 'sb64', categoryId, null, variables);
         } else if (subCommand === 'sr') {
             const categoryId = interaction.options.getString('category');
             const levelId = interaction.options.getString('level');
-            response = await handleSpeedrunRequest(interaction, 'sr', categoryId, levelId);
+            const events = interaction.options.getString('events');
+
+            const variables = {};
+            if (events) variables[SR_VARIABLES.EVENTS] = events;
+
+            response = await handleSpeedrunRequest(interaction, 'sr', categoryId, levelId, variables);
         }
 
         if (response && response.id) {
