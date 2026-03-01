@@ -1,5 +1,16 @@
 const { fetch } = require("./utils.js");
 const { ContainerBuilder, SectionBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
+const { SB64_CATEGORY_IDS, SB64_LEVEL_IDS } = require("./commands.js");
+
+const SB64_PER_LEVEL_CATEGORIES = new Set([
+    SB64_LEVEL_IDS.W1_HUB,
+    SB64_LEVEL_IDS.W2_HUB,
+    SB64_LEVEL_IDS.W3_HUB,
+    SB64_LEVEL_IDS.W4_HUB,
+    SB64_LEVEL_IDS.W5_HUB,
+    SB64_LEVEL_IDS.STARBURST_GALAXY,
+    SB64_LEVEL_IDS.ALL_DELUXE
+]);
 
 const GAMES = {
     sb64: {
@@ -12,24 +23,25 @@ const GAMES = {
     }
 };
 
-function formatTime(seconds) {
+function formatTime(seconds, forceMinutes = false) {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
 
     let parts = [];
     if (h > 0) parts.push(`${h}h`);
-    if (m > 0 || h > 0) parts.push(`${m}m`);
+    if (m > 0 || h > 0 || (forceMinutes && h === 0)) parts.push(`${m}m`);
 
     // Removed the (s % 1 === 0) check to force 3 decimal places always
-    if (s > 0 || parts.length === 0) {
-        parts.push(`${s.toFixed(3)}s`);
+    // Including s >= 0 to ensure seconds are always added
+    if (s >= 0 || parts.length > 0 || forceMinutes) {
+        parts.push(`${s.toFixed(3).padStart(6, '0')}s`);
     }
 
     return parts.join(" ");
 }
 
-async function getLeaderboardData(gameId, categoryId, levelId = null) {
+async function getLeaderboardData(gameId, categoryId, levelId = null, variables = {}) {
     let url = `https://www.speedrun.com/api/v1/leaderboards/${gameId}`;
     if (levelId) {
         url += `/level/${levelId}/${categoryId}`;
@@ -37,6 +49,12 @@ async function getLeaderboardData(gameId, categoryId, levelId = null) {
         url += `/category/${categoryId}`;
     }
     url += `?top=10&embed=players,category${levelId ? ',level' : ''}`;
+
+    for (const [key, value] of Object.entries(variables)) {
+        if (value) {
+            url += `&var-${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+        }
+    }
 
     const res = await fetch(url, {
         headers: { "User-Agent": "DiscordBot/Orbital" },
@@ -52,16 +70,28 @@ async function getLeaderboardData(gameId, categoryId, levelId = null) {
     return await res.json();
 }
 
-async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId = null) {
+async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId = null, variables = {}) {
     const game = GAMES[gameKey];
+
+    // SB64 per-level categories are actually levels in the SRC API.
+    // The Category ID for all per-level categories in SB64 is SB64_CATEGORY_IDS.PER_LEVEL_OVERALL
+    if (gameKey === 'sb64' && !levelId) {
+        if (SB64_PER_LEVEL_CATEGORIES.has(categoryId)) {
+            levelId = categoryId;
+            categoryId = SB64_CATEGORY_IDS.PER_LEVEL_OVERALL;
+        }
+    }
+
     try {
         if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
-        const responseJson = await getLeaderboardData(game.id, categoryId, levelId);
+        const responseJson = await getLeaderboardData(game.id, categoryId, levelId, variables);
         const leaderboard = responseJson.data;
 
         if (!leaderboard.runs || leaderboard.runs.length === 0) {
             return await interaction.editReply({ content: `No runs found for this category.` });
         }
+
+        const forceMinutes = leaderboard.runs.some(runItem => runItem.run.times.primary_t >= 60);
 
         const playersMap = new Map();
         leaderboard.players.data.forEach(p => {
@@ -94,7 +124,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
                 if (p.rel === "user") return playersMap.get(p.id) || "Unknown";
                 return p.name || "Guest";
             }).join(" @");
-            const time = formatTime(run.times.primary_t);
+            const time = formatTime(run.times.primary_t, forceMinutes);
             description += `${place}. <:flag:1477323785366540439> \`${time}\`    [**@${players}**](${run.weblink})\n`;
         });
 

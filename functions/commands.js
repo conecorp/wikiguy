@@ -9,6 +9,10 @@ const SB64_CATEGORY_IDS = {
     ANY_PERCENT: 'z27jz052',
     HUNDRED_PERCENT: 'jdzzxgxd',
     HUNDRED_TWENTY_TWO_PERCENT: '8244zv32',
+    PER_LEVEL_OVERALL: 'q25660vk'
+};
+
+const SB64_LEVEL_IDS = {
     W1_HUB: '920j3n7d',
     W2_HUB: '9vmyj5q9',
     W3_HUB: 'd406nrq9',
@@ -22,13 +26,30 @@ const SB64_CATEGORIES = [
     { name: 'Any%', value: SB64_CATEGORY_IDS.ANY_PERCENT },
     { name: '100%', value: SB64_CATEGORY_IDS.HUNDRED_PERCENT },
     { name: '122%', value: SB64_CATEGORY_IDS.HUNDRED_TWENTY_TWO_PERCENT },
-    { name: 'W1 Hub + Breezy Plains', value: SB64_CATEGORY_IDS.W1_HUB },
-    { name: 'W2 Hub + Sunshine Beach', value: SB64_CATEGORY_IDS.W2_HUB },
-    { name: 'W3 Hub + Sodacan Canyon', value: SB64_CATEGORY_IDS.W3_HUB },
-    { name: 'W4 Hub + Freezy Fields', value: SB64_CATEGORY_IDS.W4_HUB },
-    { name: 'W5 Hub + Mechanical Museum', value: SB64_CATEGORY_IDS.W5_HUB },
-    { name: 'Starburst Galaxy', value: SB64_CATEGORY_IDS.STARBURST_GALAXY },
-    { name: 'All deluxe challenges', value: SB64_CATEGORY_IDS.ALL_DELUXE }
+    { name: 'W1 Hub + Breezy Plains', value: SB64_LEVEL_IDS.W1_HUB },
+    { name: 'W2 Hub + Sunshine Beach', value: SB64_LEVEL_IDS.W2_HUB },
+    { name: 'W3 Hub + Sodacan Canyon', value: SB64_LEVEL_IDS.W3_HUB },
+    { name: 'W4 Hub + Freezy Fields', value: SB64_LEVEL_IDS.W4_HUB },
+    { name: 'W5 Hub + Mechanical Museum', value: SB64_LEVEL_IDS.W5_HUB },
+    { name: 'Starburst Galaxy', value: SB64_LEVEL_IDS.STARBURST_GALAXY },
+    { name: 'All deluxe challenges', value: SB64_LEVEL_IDS.ALL_DELUXE }
+];
+
+const SB64_VARIABLES = {
+    CHARACTER: 'ylqxg938',
+    GLITCHES: 'gnx6d06n'
+};
+
+const SB64_CHARACTER_CHOICES = [
+    { name: 'Bloxxer', value: 'q65xzdvl' },
+    { name: 'Bloxera', value: 'qj74x37q' },
+    { name: 'Both', value: '10v9vdjl' }
+];
+
+const SB64_GLITCHES_CHOICES = [
+    { name: 'Glitchless', value: 'lmo4g581' },
+    { name: 'NMG', value: '1w4d5ymq' },
+    { name: 'Glitches', value: 'qox3r45q' }
 ];
 
 const SR_CATEGORY_IDS = {
@@ -91,6 +112,17 @@ const SR_LEVELS = [
     { name: 'Lobby Hard Time Trial', value: SR_LEVEL_IDS.LOBBY_HARD }
 ];
 
+const SR_VARIABLES = {
+    EVENTS: 'p85y11vl'
+};
+
+const SR_EVENTS_CHOICES = [
+    { name: 'No Events', value: 'qkem56nq' },
+    { name: 'Raised Speed Cap', value: 'q75rpkv1' },
+    { name: 'Low Gravity', value: 'qoxd952q' },
+    { name: 'RSC + LG', value: 'qyzog9d1' }
+];
+
 const commands = [
     {
         name: 'lb',
@@ -107,6 +139,20 @@ const commands = [
                         type: 3, // STRING
                         required: true,
                         choices: SB64_CATEGORIES
+                    },
+                    {
+                        name: 'character',
+                        description: 'Filter by character',
+                        type: 3, // STRING
+                        required: false,
+                        choices: SB64_CHARACTER_CHOICES
+                    },
+                    {
+                        name: 'glitches',
+                        description: 'Filter by glitch category',
+                        type: 3, // STRING
+                        required: false,
+                        choices: SB64_GLITCHES_CHOICES
                     }
                 ]
             },
@@ -128,6 +174,13 @@ const commands = [
                         type: 3, // STRING
                         required: false,
                         choices: SR_LEVELS
+                    },
+                    {
+                        name: 'events',
+                        description: 'Filter by events',
+                        type: 3, // STRING
+                        required: false,
+                        choices: SR_EVENTS_CHOICES
                     }
                 ]
             },
@@ -210,4 +263,10 @@ const commands = [
     }
 ];
 
-module.exports = { commands };
+module.exports = {
+    commands,
+    SB64_CATEGORY_IDS,
+    SB64_LEVEL_IDS,
+    SB64_VARIABLES,
+    SR_VARIABLES
+};
