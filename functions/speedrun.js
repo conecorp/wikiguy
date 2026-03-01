@@ -1,6 +1,7 @@
 const { fetch } = require("./utils.js");
 const { ContainerBuilder, SectionBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const { SB64_CATEGORY_IDS, SB64_LEVEL_IDS } = require("./commands.js");
+const { WIKIS } = require("../config.js");
 
 const SB64_PER_LEVEL_CATEGORIES = new Set([
     SB64_LEVEL_IDS.W1_HUB,
@@ -21,6 +22,11 @@ const GAMES = {
         id: "o6gk4xn1",
         name: "Superstar Racers"
     }
+};
+
+const GAME_WIKI_MAP = {
+    sb64: 'super-blox-64',
+    sr: 'superstar-racers'
 };
 
 function formatTime(seconds, forceMinutes = false) {
@@ -88,7 +94,9 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         const leaderboard = responseJson.data;
 
         if (!leaderboard.runs || leaderboard.runs.length === 0) {
-            return await interaction.editReply({ content: `No runs found for this category.` });
+            const noRunsMsg = { content: `No runs found for this category.`, ephemeral: true };
+            await interaction.deleteReply().catch(e => console.warn("Failed to delete reply:", e.message));
+            return await interaction.followUp(noRunsMsg);
         }
 
         const forceMinutes = leaderboard.runs.some(runItem => runItem.run.times.primary_t >= 60);
@@ -134,12 +142,18 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         section.setThumbnailAccessory(thumbnail => thumbnail.setURL("https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"));
 
         const row = new ActionRowBuilder();
-        row.addComponents(
-            new ButtonBuilder()
-                .setLabel("View full leaderboard")
-                .setStyle(ButtonStyle.Link)
-                .setURL(leaderboard.weblink)
-        );
+        const button = new ButtonBuilder()
+            .setLabel("View full leaderboard")
+            .setStyle(ButtonStyle.Link)
+            .setURL(leaderboard.weblink);
+
+        const wikiKey = GAME_WIKI_MAP[gameKey];
+        const wikiConfig = WIKIS[wikiKey];
+        if (wikiConfig && wikiConfig.emoji) {
+            button.setEmoji(wikiConfig.emoji);
+        }
+
+        row.addComponents(button);
 
         container.addSectionComponents(section);
         container.addActionRowComponents(row);
@@ -152,11 +166,12 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
     } catch (err) {
         console.error("Error fetching speedrun leaderboard:", err);
         const errorMessage = err.status === 400 ? `Speedrun.com: ${err.message}` : "An error occurred while fetching the leaderboard.";
-        const errorMsg = { content: errorMessage };
+        const errorMsg = { content: errorMessage, ephemeral: true };
         if (interaction.deferred || interaction.replied) {
-            return await interaction.editReply(errorMsg).catch(() => null);
+            await interaction.deleteReply().catch(() => {});
+            return await interaction.followUp(errorMsg).catch(() => null);
         } else {
-            return await interaction.reply({ ...errorMsg, ephemeral: true, fetchReply: true }).catch(() => null);
+            return await interaction.reply(errorMsg).catch(() => null);
         }
     }
 }
