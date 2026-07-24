@@ -72,7 +72,7 @@ function getWikiAndPage(messageContent, channelParentId) {
     if (!match) return null;
 
     const prefix = match[1] || match[3];
-    const rawPageName = (match[2] || match[4]).trim();
+    let rawPageName = (match[2] || match[4]).trim();
 
     let wikiConfig = null;
     if (prefix) {
@@ -80,6 +80,13 @@ function getWikiAndPage(messageContent, channelParentId) {
     } else {
         const wikiKey = CATEGORY_WIKI_MAP[channelParentId] || "superstar-racers";
         wikiConfig = WIKIS[wikiKey];
+    }
+
+    const rawLower = rawPageName.toLowerCase();
+    if (rawLower.startsWith("mw:")) {
+        rawPageName = "MediaWiki:" + rawPageName.slice(3).trim();
+    } else if (rawLower.startsWith("t:")) {
+        rawPageName = "Template:" + rawPageName.slice(2).trim();
     }
 
     return { wikiConfig, rawPageName };
