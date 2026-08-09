@@ -191,21 +191,21 @@ const GAME_WIKI_MAP = {
 };
 
 function formatTime(seconds, forceMinutes = false) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
+    const totalMs = Math.round(seconds * 1000);
+    const h = Math.floor(totalMs / 3600000);
+    const m = Math.floor((totalMs % 3600000) / 60000);
+    const s = Math.floor((totalMs % 60000) / 1000);
+    const ms = totalMs % 1000;
 
-    let parts = [];
-    if (h > 0) parts.push(`${h}h`);
-    if (m > 0 || h > 0 || (forceMinutes && h === 0)) parts.push(`${m}m`);
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
+    const mss = String(ms).padStart(3, '0');
 
-    // Removed the (s % 1 === 0) check to force 3 decimal places always
-    // Including s >= 0 to ensure seconds are always added
-    if (s >= 0 || parts.length > 0 || forceMinutes) {
-        parts.push(`${s.toFixed(3).padStart(6, '0')}s`);
+    if (h > 0) {
+        const hh = String(h).padStart(2, '0');
+        return `${hh}:${mm}:${ss}:${mss}`;
     }
-
-    return parts.join(" ");
+    return `${mm}:${ss}:${mss}`;
 }
 
 async function getLeaderboardData(gameId, categoryId, levelId = null, variables = {}) {
@@ -299,7 +299,7 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
                 return p.name || "Guest";
             }).join(" @");
             const time = formatTime(run.times.primary_t, forceMinutes);
-            description += `${place}. <:flag:1477323785366540439> \`${time}\`    [**@${players}**](${run.weblink})\n`;
+            description += `${place}. \`${time}\`    [**@${players}**](${run.weblink})\n`;
         });
 
         const container = new ContainerBuilder();
