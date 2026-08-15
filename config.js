@@ -35,6 +35,9 @@ const CATEGORY_WIKI_MAP = {
 };
 
 const toggleContribScore = true;
+
+const SPEEDRUN_EMOJI = "1477323785366540439";
+
 const STATUS_INTERVAL_MS = 5 * 60 * 1000;
 
 // --- DISCORD STATUSES ---
@@ -62,6 +65,7 @@ module.exports = {
     WIKIS,
     CATEGORY_WIKI_MAP,
     toggleContribScore,
+    SPEEDRUN_EMOJI,
     STATUS_INTERVAL_MS,
     STATUS_OPTIONS
 };

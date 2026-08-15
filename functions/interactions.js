@@ -2,6 +2,9 @@ const {
     findCanonicalTitle,
     getPageData,
     getSectionContent,
+    getRandomPage,
+    getUserProfile,
+    linkIntroductionPageName,
 } = require("./parse_page.js");
 const { handleFileRequest } = require("./parse_file.js");
 const { handleContribScoresRequest } = require("./contribscores.js");
@@ -159,13 +162,14 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
         const mainSection = new SectionBuilder();
 
         if (shouldShowTextSection) {
-            mainSection.addTextDisplayComponents([new TextDisplayBuilder().setContent(content)]);
-            const fallbackImage = "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png";
-            const finalImageUrl = (!hasGallery && typeof imageUrl === "string" && imageUrl.trim() !== "") ? imageUrl : fallbackImage;
-
-            mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(finalImageUrl));
-
-            container.addSectionComponents(mainSection);
+            const hasImage = !hasGallery && typeof imageUrl === "string" && imageUrl.trim() !== "";
+            if (hasImage) {
+                mainSection.addTextDisplayComponents([new TextDisplayBuilder().setContent(content)]);
+                mainSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(imageUrl));
+                container.addSectionComponents(mainSection);
+            } else {
+                container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+            }
         }
 
         if (hasGallery) {
@@ -224,6 +228,39 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null) {
     return container;
 }
 
+function buildUserEmbed(profile, wikiConfig) {
+    const container = new ContainerBuilder();
+    const groupLine = profile.groups.length ? `-# ${profile.groups.join(", ")}` : "";
+    const editLine = Number.isFinite(profile.editCount) ? `-# ${profile.editCount} edits` : "";
+    const content = [
+        `## [@${profile.username}](${profile.profileUrl})`,
+        groupLine,
+        editLine,
+        profile.content || ""
+    ].filter(Boolean).join("\n");
+
+    const section = new SectionBuilder();
+    section.addTextDisplayComponents([new TextDisplayBuilder().setContent(content)]);
+    if (profile.avatarUrl) {
+        section.setThumbnailAccessory(thumbnail => thumbnail.setURL(profile.avatarUrl));
+    }
+    if (profile.avatarUrl) {
+        container.addSectionComponents(section);
+    } else {
+        container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+    }
+
+    const row = new ActionRowBuilder();
+    const button = new ButtonBuilder()
+        .setLabel(`User:${profile.username}`.slice(0, 80))
+        .setStyle(ButtonStyle.Link)
+        .setURL(profile.profileUrl);
+    if (wikiConfig.emoji) button.setEmoji(wikiConfig.emoji);
+    row.addComponents(button);
+    container.addActionRowComponents(row);
+    return container;
+}
+
 async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, botMessageToEdit = null) {
     if (rawPageName.toLowerCase().startsWith("file:")) {
         return await handleFileRequest(wikiConfig, rawPageName.slice(5).trim(), messageOrInteraction);
@@ -272,6 +309,25 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
     }
 
     try {
+        const userMatch = String(rawPageName).match(/^(?:User\s*:\s*|@)(.+)$/i);
+        if (userMatch) {
+            const username = userMatch[1].trim();
+            const profile = await getUserProfile(username, wikiConfig);
+            if (!profile) {
+                return await smartReply({ content: `User "${username}" not found on [${wikiConfig.name} Wiki](<${wikiConfig.baseUrl}>).`, components: [], ephemeral: true, allowedMentions: { parse: [] } });
+            }
+            const container = buildUserEmbed(profile, wikiConfig);
+            return await smartReply({ content: "", components: [container], flags: MessageFlags.IsComponentsV2, allowedMentions: { parse: [] } });
+        }
+
+        if (String(rawPageName).trim().toLowerCase() === "special:random") {
+            const randomTitle = await getRandomPage(wikiConfig);
+            if (!randomTitle) {
+                return await smartReply({ content: `Unable to find a random page on [${wikiConfig.name} Wiki](<${wikiConfig.baseUrl}>).`, components: [], ephemeral: true, allowedMentions: { parse: [] } });
+            }
+            rawPageName = randomTitle;
+        }
+
         let sectionName = null;
 
         if (rawPageName.includes("#")) {
@@ -306,7 +362,7 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
             const pageData = await getPageData(rawPageName, wikiConfig);
             if (pageData) {
                 canonical = pageData.canonical;
-                content = pageData.extract;
+                content = linkIntroductionPageName(pageData.extract, pageData.canonical, wikiConfig);
                 imageUrl = pageData.imageUrl;
                 displayTitle = canonical;
             }
@@ -371,17 +427,12 @@ async function handleInteraction(interaction) {
 
     if (!interaction.isCommand()) return;
 
-    if (interaction.commandName === 'lbwiki') {
+    if (interaction.commandName === 'contribs') {
         try {
-            const subCommand = interaction.options.getSubcommand();
-            if (subCommand === 'contribs') {
-                await handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags });
-                return;
-            } else {
-                return interaction.reply({ content: 'Unknown subcommand.', ephemeral: true }).catch(() => {});
-            }
+            await handleContribScoresRequest(interaction, { toggleContribScore, WIKIS, buildPageEmbed, botToAuthorMap, pruneMap, MessageFlags });
+            return;
         } catch (err) {
-            return sendInteractionError(interaction, err, 'lbwiki');
+            return sendInteractionError(interaction, err, 'contribs');
         }
     } else if (interaction.commandName === 'speedrun') {
         try {
@@ -482,6 +533,26 @@ async function handleInteraction(interaction) {
             } else {
                 await interaction.reply(errorMsg).catch(() => {});
             }
+        }
+    } else if (interaction.commandName === 'user' || interaction.commandName === 'random') {
+        const wikiKey = interaction.options.getString('wiki') || 'superstar-racers';
+        const wikiConfig = WIKIS[wikiKey];
+        if (!wikiConfig) {
+            await interaction.reply({ content: 'Unknown wiki selection.', ephemeral: true }).catch(() => {});
+            return;
+        }
+        try {
+            if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
+            const pageName = interaction.commandName === 'user'
+                ? `User:${interaction.options.getString('username')}`
+                : 'Special:Random';
+            const response = await handleUserRequest(wikiConfig, pageName, interaction);
+            if (response && response.id) {
+                botToAuthorMap.set(response.id, interaction.user.id);
+                pruneMap(botToAuthorMap);
+            }
+        } catch (err) {
+            return sendInteractionError(interaction, err, interaction.commandName);
         }
     } else if (interaction.commandName === 'parse') {
         const subCommand = interaction.options.getSubcommand();

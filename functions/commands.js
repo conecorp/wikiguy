@@ -107,24 +107,17 @@ const commands = [
         ]
     },
     {
-        name: 'lbwiki',
-        description: 'View wiki leaderboards',
+        name: 'contribs',
+        description: 'View wiki contribution scores',
         integrationTypes: [0, 1],
         contexts: [0, 1, 2],
         options: [
             {
-                name: 'contribs',
-                description: 'Get contribution scores for a wiki',
-                type: 1, // SUB_COMMAND
-                options: [
-                    {
-                        name: 'wiki',
-                        description: 'Select a wiki',
-                        type: 3, // STRING
-                        required: true,
-                        choices: wikiChoices
-                    }
-                ]
+                name: 'wiki',
+                description: 'Select a wiki',
+                type: 3, // STRING
+                required: true,
+                choices: wikiChoices
             }
         ]
     },
@@ -191,6 +184,25 @@ const commands = [
                     }
                 ]
             }
+        ]
+    },
+    {
+        name: 'user',
+        description: 'View a wiki user profile',
+        integrationTypes: [0, 1],
+        contexts: [0, 1, 2],
+        options: [
+            { name: 'wiki', description: 'The wiki to search in', type: 3, required: true, choices: wikiChoices },
+            { name: 'username', description: 'The wiki username', type: 3, required: true }
+        ]
+    },
+    {
+        name: 'random',
+        description: 'View a random wiki page',
+        integrationTypes: [0, 1],
+        contexts: [0, 1, 2],
+        options: [
+            { name: 'wiki', description: 'The wiki to search in', type: 3, required: false, choices: wikiChoices }
         ]
     }
 ];

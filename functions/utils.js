@@ -32,11 +32,12 @@ function truncateToParagraphs(text, maxParagraphs = 2) {
     if (!text) return "";
     const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
 
+    const ellipsis = (value) => value.replace(/\.\s*$/, '') + '...';
     let result;
     if (paragraphs.length <= maxParagraphs) {
         result = text;
     } else {
-        result = paragraphs.slice(0, maxParagraphs).join('\n\n') + ' ...';
+        result = ellipsis(paragraphs.slice(0, maxParagraphs).join('\n\n'));
     }
 
     // Ensure the result doesn't exceed Discord's 2000 character limit
@@ -45,10 +46,10 @@ function truncateToParagraphs(text, maxParagraphs = 2) {
         let truncated = "";
         for (const para of paragraphs) {
             const testResult = truncated ? truncated + '\n\n' + para : para;
-            if (testResult.length + 4 > 2000) break; // +4 for ' ...'
+            if (testResult.length + 3 > 2000) break; // +3 for '...'
             truncated = testResult;
         }
-        result = truncated + ' ...';
+        result = ellipsis(truncated);
 
         // If still too long, hard truncate
         if (result.length > 2000) {

@@ -39,6 +39,26 @@ function getFullSizeImageUrl(url) {
     return url;
 }
 
+function linkIntroductionPageName(content, pageTitle, wikiConfig) {
+    if (!content || !pageTitle || !wikiConfig) return content;
+
+    const firstParagraphEnd = content.search(/\n\s*\n/);
+    const firstParagraph = firstParagraphEnd === -1 ? content : content.slice(0, firstParagraphEnd);
+    const boldMatch = firstParagraph.match(/(?<!\[)\*\*([^*\n]+)\*\*/);
+    if (!boldMatch) return content;
+
+    const pageName = String(pageTitle).split("#")[0].replace(/_/g, " ").trim();
+    if (!pageName || !boldMatch[1].toLowerCase().includes(pageName.toLowerCase())) return content;
+
+    const pageOnly = String(pageTitle).split("#")[0];
+    const parts = pageOnly.split(":").map(part => encodeURIComponent(part.replace(/ /g, "_")));
+    const url = `<${wikiConfig.articlePath}${parts.join(":")}>`;
+    const linked = `[**${boldMatch[1]}**](${url})`;
+    const start = boldMatch.index;
+    const end = start + boldMatch[0].length;
+    return firstParagraph.slice(0, start) + linked + firstParagraph.slice(end) + content.slice(firstParagraph.length);
+}
+
 function htmlToMarkdown(html, baseUrl, $existing = null) {
     if (!html && !$existing) return "";
     const $ = $existing || cheerio.load(html);
@@ -251,6 +271,84 @@ async function getPageData(input, wikiConfig) {
 
     } catch (err) {
         console.warn("getPageData failed:", err.message);
+        return null;
+    }
+}
+
+async function getRandomPage(wikiConfig) {
+    const params = new URLSearchParams({
+        action: "query",
+        format: "json",
+        list: "random",
+        rnnamespace: "0",
+        rnlimit: "1"
+    });
+    try {
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, { headers: { "User-Agent": "DiscordBot/Orbital" } });
+        if (!res.ok) return null;
+        const json = await res.json();
+        return json.query?.random?.[0]?.title || null;
+    } catch (err) {
+        console.warn("getRandomPage failed:", err.message);
+        return null;
+    }
+}
+
+function firstValue(value, keys) {
+    if (!value || typeof value !== "object") return null;
+    for (const key of keys) {
+        if (typeof value[key] === "string" && value[key].trim()) return value[key].trim();
+    }
+    for (const child of Object.values(value)) {
+        if (child && typeof child === "object") {
+            const result = firstValue(child, keys);
+            if (result) return result;
+        }
+    }
+    return null;
+}
+
+async function getUserProfile(username, wikiConfig) {
+    const normalized = String(username).trim().replace(/^User\s*:\s*/i, "").replace(/^@/, "");
+    if (!normalized) return null;
+    const userParams = new URLSearchParams({
+        action: "query",
+        format: "json",
+        list: "users",
+        ususers: normalized,
+        usprop: "groups|editcount"
+    });
+
+    try {
+        const userRes = await fetch(`${wikiConfig.apiEndpoint}?${userParams.toString()}`, { headers: { "User-Agent": "DiscordBot/Orbital" } });
+        if (!userRes.ok) return null;
+        const userJson = await userRes.json();
+        const user = userJson.query?.users?.[0];
+        if (!user || user.invalid !== undefined || user.userid === 0) return null;
+
+        let profileJson = null;
+        const profileParams = new URLSearchParams({ action: "setuserprofilev2", format: "json", user: normalized, username: normalized });
+        try {
+            const profileRes = await fetch(`${wikiConfig.apiEndpoint}?${profileParams.toString()}`, { headers: { "User-Agent": "DiscordBot/Orbital" } });
+            if (profileRes.ok) profileJson = await profileRes.json();
+        } catch (_) { /* Profile data is optional; the MediaWiki user record is authoritative. */ }
+
+        let avatarUrl = firstValue(profileJson, ["avatarUrl", "avatar_url", "avatar", "image"]);
+        if (avatarUrl && avatarUrl.startsWith("/")) {
+            avatarUrl = new URL(avatarUrl, wikiConfig.baseUrl).href;
+        }
+        const page = await getPageData(`User:${normalized}`, wikiConfig);
+        const profileUrl = `${wikiConfig.articlePath}User:${normalized.replace(/ /g, "_")}`;
+        return {
+            username: user.name || normalized,
+            groups: Array.isArray(user.groups) ? user.groups : [],
+            editCount: Number.isFinite(Number(user.editcount)) ? Number(user.editcount) : null,
+            avatarUrl,
+            profileUrl,
+            content: page?.extract || ""
+        };
+    } catch (err) {
+        console.warn("getUserProfile failed:", err.message);
         return null;
     }
 }
@@ -519,7 +617,10 @@ module.exports = {
     getWikiContent, 
     getSectionContent, 
     getLeadSection, 
+    getRandomPage,
+    getUserProfile,
     parseWikiLinks, 
     parseTemplates,
-    getFullSizeImageUrl
+    getFullSizeImageUrl,
+    linkIntroductionPageName
 };
