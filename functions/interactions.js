@@ -248,7 +248,10 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
 
 function buildUserEmbed(profile, wikiConfig) {
     const container = new ContainerBuilder();
-    const groupLine = profile.groups.length ? `-# ${profile.groups.join(", ")}` : "";
+    const groupText = profile.groups.length > 1
+        ? `${profile.groups.slice(0, -1).join(", ")} & ${profile.groups.at(-1)}`
+        : profile.groups[0] || "";
+    const groupLine = groupText ? `-# ${groupText}` : "";
     const content = [
         `## [@${profile.username}](${profile.profileUrl})`,
         groupLine,

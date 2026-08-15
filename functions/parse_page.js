@@ -379,10 +379,12 @@ async function getUserProfile(username, wikiConfig) {
             .replace(/\{\{[^{}]*\}\}/g, "")
             .trim()
             .replace(/[-_]+/g, " ")
-            .replace(/\b\w/g, char => char.toUpperCase());
+            .toLowerCase();
         const groups = visibleGroups.map(group => cleanGroupLabel(
             wikiGroupLabels[`group-${group}-member`] || fallbackGroupLabels[group] || group
-        ));
+        )).map((group, index) => index === 0
+            ? group.charAt(0).toUpperCase() + group.slice(1)
+            : group);
 
         return {
             username: user.name || normalized,
