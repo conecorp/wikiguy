@@ -67,7 +67,7 @@ client.once("ready", async () => {
 });
 
 // -------------------- EVENTS --------------------
-function getWikiAndPage(messageContent, channelParentId) {
+function getWikiAndPage(messageContent, channel) {
     const match = messageContent.match(syntaxRegex);
     if (!match) return null;
 
@@ -78,7 +78,14 @@ function getWikiAndPage(messageContent, channelParentId) {
     if (prefix) {
         wikiConfig = WIKIS[PREFIX_WIKI_MAP[prefix]];
     } else {
-        const wikiKey = CATEGORY_WIKI_MAP[channelParentId] || "superstar-racers";
+        const channelIds = [
+            channel?.parentId,
+            channel?.parent?.id,
+            channel?.parent?.parentId,
+            channel?.parent?.parent?.id
+        ].filter(Boolean).map(String);
+        const categoryId = channelIds.find(id => CATEGORY_WIKI_MAP[id]);
+        const wikiKey = CATEGORY_WIKI_MAP[categoryId] || "superstar-racers";
         wikiConfig = WIKIS[wikiKey];
     }
 
@@ -95,7 +102,7 @@ function getWikiAndPage(messageContent, channelParentId) {
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
 
-    const res = getWikiAndPage(message.content, message.channel.parentId);
+    const res = getWikiAndPage(message.content, message.channel);
     if (!res) return;
 
     const { wikiConfig, rawPageName } = res;
@@ -132,7 +139,7 @@ client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (oldMessage.content === newMessage.content) return;
     if (!responseMap.has(newMessage.id)) return;
 
-    const res = getWikiAndPage(newMessage.content, newMessage.channel.parentId);
+    const res = getWikiAndPage(newMessage.content, newMessage.channel);
     if (!res) return;
 
     const { wikiConfig, rawPageName } = res;
@@ -163,29 +170,33 @@ client.on("messageReactionAdd", async (reaction, user) => {
         }
     }
 
-    const emoji = reaction.emoji.name;
+    const emoji = reaction.emoji.name?.toLowerCase();
     if (emoji === "🗑️" || emoji === "wastebucket") {
         const message = reaction.message;
-        if (message.author.id !== client.user.id) return;
+        // Do not let an incomplete partial payload bypass the bot-message check.
+        if (!message.author?.id || message.author.id !== client.user.id) return;
 
         let originalAuthorId = botToAuthorMap.get(message.id);
 
 
-        if (!originalAuthorId && message.reference) {
+        if (!originalAuthorId && message.reference?.messageId) {
             try {
                 const referencedMsg = await message.channel.messages.fetch(message.reference.messageId);
-                originalAuthorId = referencedMsg.author.id;
+                originalAuthorId = referencedMsg.author?.id;
                 // Cache it for next time
-                botToAuthorMap.set(message.id, originalAuthorId);
-                pruneMap(botToAuthorMap);
+                if (originalAuthorId) {
+                    botToAuthorMap.set(message.id, originalAuthorId);
+                    pruneMap(botToAuthorMap);
+                }
             } catch (err) {
                 console.warn(`Failed to fetch referenced message ${message.reference.messageId} for bot message ${message.id}:`, err);
             }
         }
 
-        if (user.id === originalAuthorId) {
+        if (originalAuthorId && user.id === originalAuthorId) {
             try {
                 await message.delete();
+                botToAuthorMap.delete(message.id);
             } catch (err) {
                 console.warn("Failed to delete message on reaction:", err.message);
             }

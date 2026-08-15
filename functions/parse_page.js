@@ -339,9 +339,43 @@ async function getUserProfile(username, wikiConfig) {
         }
         const page = await getPageData(`User:${normalized}`, wikiConfig);
         const profileUrl = `${wikiConfig.articlePath}User:${normalized.replace(/ /g, "_")}`;
+        const fallbackGroupLabels = {
+            bureaucrat: "Bureaucrat",
+            "interface-admin": "Interface administrator",
+            sysop: "Administrator",
+            autoconfirmed: "Autoconfirmed",
+            confirmed: "Confirmed",
+            bot: "Bot"
+        };
+        const visibleGroups = (Array.isArray(user.groups) ? user.groups : [])
+            .filter(group => !["*", "user"].includes(group));
+        const messageNames = visibleGroups.map(group => `group-${group}-member`).join("|");
+        let wikiGroupLabels = {};
+        if (messageNames) {
+            try {
+                const labelParams = new URLSearchParams({
+                    action: "query",
+                    format: "json",
+                    meta: "allmessages",
+                    ammessages: messageNames,
+                    amlang: "content"
+                });
+                const labelRes = await fetch(`${wikiConfig.apiEndpoint}?${labelParams.toString()}`, { headers: { "User-Agent": "DiscordBot/Orbital" } });
+                const messages = (await labelRes.json()).query?.allmessages || [];
+                wikiGroupLabels = Object.fromEntries(messages
+                    .filter(message => message['*'] && !message['*'].includes("⧼"))
+                    .map(message => [message.name, message['*']]));
+            } catch (err) {
+                console.warn("Failed to fetch on-wiki group labels:", err.message);
+            }
+        }
+        const groups = visibleGroups.map(group => wikiGroupLabels[`group-${group}-member`]
+            || fallbackGroupLabels[group]
+            || group.replace(/[-_]+/g, " ").replace(/\b\w/g, char => char.toUpperCase()));
+
         return {
             username: user.name || normalized,
-            groups: Array.isArray(user.groups) ? user.groups : [],
+            groups: [...new Set(groups)],
             editCount: Number.isFinite(Number(user.editcount)) ? Number(user.editcount) : null,
             avatarUrl,
             profileUrl,
@@ -350,6 +384,27 @@ async function getUserProfile(username, wikiConfig) {
     } catch (err) {
         console.warn("getUserProfile failed:", err.message);
         return null;
+    }
+}
+
+async function getSectionChoices(pageTitle, prefix, wikiConfig) {
+    if (!pageTitle || !wikiConfig) return [];
+    const canonical = await findCanonicalTitle(pageTitle, wikiConfig) || pageTitle;
+    const params = new URLSearchParams({ action: "parse", format: "json", prop: "sections", page: canonical });
+    try {
+        const res = await fetch(`${wikiConfig.apiEndpoint}?${params}`, { headers: { "User-Agent": "DiscordBot/Orbital" } });
+        const sections = (await res.json()).parse?.sections || [];
+        const search = String(prefix || "").toLowerCase();
+        return sections
+            .map(section => {
+                const name = section.line.replace(/<[^>]*>?/gm, "");
+                return { name, value: name };
+            })
+            .filter(choice => choice.name.toLowerCase().includes(search))
+            .slice(0, 25);
+    } catch (err) {
+        console.warn("getSectionChoices failed:", err.message);
+        return [];
     }
 }
 
@@ -619,6 +674,7 @@ module.exports = {
     getLeadSection, 
     getRandomPage,
     getUserProfile,
+    getSectionChoices,
     parseWikiLinks, 
     parseTemplates,
     getFullSizeImageUrl,

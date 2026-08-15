@@ -160,6 +160,13 @@ const commands = [
                         type: 3, // STRING
                         required: true,
                         autocomplete: true
+                    },
+                    {
+                        name: 'section',
+                        description: 'An optional section to search for',
+                        type: 3, // STRING
+                        required: false,
+                        autocomplete: true
                     }
                 ]
             },
@@ -193,7 +200,7 @@ const commands = [
         contexts: [0, 1, 2],
         options: [
             { name: 'wiki', description: 'The wiki to search in', type: 3, required: true, choices: wikiChoices },
-            { name: 'username', description: 'The wiki username', type: 3, required: true }
+            { name: 'username', description: 'The wiki username', type: 3, required: true, autocomplete: true }
         ]
     },
     {

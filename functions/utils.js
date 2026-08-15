@@ -28,30 +28,29 @@ const fetch = async (...args) => {
  * @param {number} maxParagraphs - Maximum number of paragraphs to keep.
  * @returns {string} - The truncated text.
  */
-function truncateToParagraphs(text, maxParagraphs = 2) {
+function truncateToParagraphs(text, maxParagraphs = 2, maxCharacters = null) {
     if (!text) return "";
     const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
 
     const ellipsis = (value) => value.replace(/\.\s*$/, '') + '...';
-    let result;
-    if (paragraphs.length <= maxParagraphs) {
-        result = text;
-    } else {
-        result = ellipsis(paragraphs.slice(0, maxParagraphs).join('\n\n'));
+    let result = paragraphs.length <= maxParagraphs
+        ? text
+        : ellipsis(paragraphs.slice(0, maxParagraphs).join('\n\n'));
+
+    if (maxCharacters && result.length > maxCharacters) {
+        result = result.slice(0, Math.max(0, maxCharacters - 3)).replace(/\s+$/, '') + '...';
     }
 
-    // Ensure the result doesn't exceed Discord's 2000 character limit
+    // Preserve the original Discord message limit for general page content.
     if (result.length > 2000) {
-        // Try to truncate at paragraph boundaries
         let truncated = "";
         for (const para of paragraphs) {
             const testResult = truncated ? truncated + '\n\n' + para : para;
-            if (testResult.length + 3 > 2000) break; // +3 for '...'
+            if (testResult.length + 3 > 2000) break;
             truncated = testResult;
         }
         result = ellipsis(truncated);
 
-        // If still too long, hard truncate
         if (result.length > 2000) {
             result = result.substring(0, 1997) + '...';
         }
