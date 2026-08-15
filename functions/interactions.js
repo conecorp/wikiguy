@@ -19,7 +19,8 @@ const {
 } = require("./speedrun.js");
 const {
     WIKIS,
-    toggleContribScore
+    toggleContribScore,
+    BOT_NAME
 } = require("../config.js");
 const { fetch, truncateToParagraphs: truncateContentToParagraphs } = require("./utils.js");
 
@@ -39,13 +40,9 @@ const {
 const responseMap = new Map();
 const botToAuthorMap = new Map();
 
-let randomWikiIndex = 0;
-
 function nextRandomWikiKey() {
     const keys = Object.keys(WIKIS);
-    const key = keys[randomWikiIndex % keys.length];
-    randomWikiIndex = (randomWikiIndex + 1) % keys.length;
-    return key;
+    return keys[Math.floor(Math.random() * keys.length)];
 }
 
 function pruneMap(map, maxSize = 1000) {
@@ -68,7 +65,7 @@ function sendInteractionError(interaction, error, tag) {
 async function fetchWikiChoices(wikiConfig, params, listKey, isFileSearch) {
     try {
         const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, {
-            headers: { "User-Agent": "DiscordBot/Orbital" },
+            headers: { "User-Agent": `${BOT_NAME} Discord bot` },
             signal: AbortSignal.timeout(3000)
         });
         if (!res.ok) {
@@ -204,7 +201,7 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
         try {
             let pageUrl;
             if (title === "Special:ContributionScores") {
-                pageUrl = `${wikiConfig.articlePath}Special:ContributionScores?utm_source=orbital`;
+                pageUrl = `${wikiConfig.articlePath}Special:ContributionScores?utm_source=${encodeURIComponent(BOT_NAME)}`;
             } else {
                 const isSectionLink = String(title).includes(" § ");
                 const titleStr = String(title);
@@ -220,7 +217,7 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
                 }
                 const parts = pageOnly.split(':').map(s => encodeURIComponent(s.replace(/ /g, "_")));
                 const anchor = frag ? '#' + encodeURIComponent(frag.replace(/ /g, '_')) : '';
-                pageUrl = `${wikiConfig.articlePath}${parts.join(':')}?utm_source=orbital${anchor}`;
+                pageUrl = `${wikiConfig.articlePath}${parts.join(':')}?utm_source=${encodeURIComponent(BOT_NAME)}${anchor}`;
             }
 
             const row = new ActionRowBuilder();
@@ -234,6 +231,12 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
             }
 
             if (btn) row.addComponents(btn);
+            if (hasGallery && gallery.length > galleryLimit) {
+                row.addComponents(new ButtonBuilder()
+                    .setLabel(`View ${gallery.length - galleryLimit} more`.slice(0, 80))
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(pageUrl));
+            }
             if (row.components.length > 0) container.addActionRowComponents(row);
         } catch (err) {
             console.warn("Failed to build link button:", err.message);
@@ -246,11 +249,9 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
 function buildUserEmbed(profile, wikiConfig) {
     const container = new ContainerBuilder();
     const groupLine = profile.groups.length ? `-# ${profile.groups.join(", ")}` : "";
-    const editLine = Number.isFinite(profile.editCount) ? `-# ${profile.editCount.toLocaleString('en-US')} edits` : "";
     const content = [
         `## [@${profile.username}](${profile.profileUrl})`,
         groupLine,
-        editLine,
         profile.content ? truncateContentToParagraphs(profile.content, 2, 500) : ""
     ].filter(Boolean).join("\n");
 
@@ -269,9 +270,15 @@ function buildUserEmbed(profile, wikiConfig) {
     const button = new ButtonBuilder()
         .setLabel(`User:${profile.username}`.slice(0, 80))
         .setStyle(ButtonStyle.Link)
-        .setURL(profile.profileUrl);
+        .setURL(`${profile.profileUrl}?utm_source=${encodeURIComponent(BOT_NAME)}`);
     if (wikiConfig.emoji) button.setEmoji(wikiConfig.emoji);
     row.addComponents(button);
+    if (Number.isFinite(profile.editCount)) {
+        row.addComponents(new ButtonBuilder()
+            .setLabel(`${profile.editCount.toLocaleString('en-US')} edits`.slice(0, 80))
+            .setStyle(ButtonStyle.Link)
+            .setURL(`${profile.contribsUrl}?utm_source=${encodeURIComponent(BOT_NAME)}`));
+    }
     container.addActionRowComponents(row);
     return container;
 }
@@ -624,3 +631,4 @@ module.exports = {
     botToAuthorMap,
     pruneMap
 };
+

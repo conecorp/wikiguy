@@ -1,4 +1,5 @@
 const { fetch } = require("./utils.js");
+const { BOT_NAME } = require("../config.js");
 
 async function getContributionScores(wikiConfig) {
     try {
@@ -11,7 +12,7 @@ async function getContributionScores(wikiConfig) {
         });
 
         const url = `${wikiConfig.apiEndpoint}?${params.toString()}`;
-        const res = await fetch(url, { headers: { "User-Agent": "DiscordBot/Orbital" } });
+        const res = await fetch(url, { headers: { "User-Agent": `${BOT_NAME} Discord bot` } });
         const json = await res.json();
         const html = json.parse?.text?.["*"];
 
@@ -111,3 +112,4 @@ async function handleContribScoresRequest(interaction, { toggleContribScore, WIK
 }
 
 module.exports = { getContributionScores, handleContribScoresRequest };
+

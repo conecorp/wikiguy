@@ -1,6 +1,6 @@
 const { fetch } = require("./utils.js");
 const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
-const { WIKIS, SPEEDRUN_EMOJI } = require("../config.js");
+const { WIKIS, SPEEDRUN_EMOJI, BOT_NAME } = require("../config.js");
 
 const SB64_CATEGORY_IDS = {
     ANY_PERCENT: 'z27jz052',
@@ -224,7 +224,7 @@ async function getLeaderboardData(gameId, categoryId, levelId = null, variables 
     }
 
     const res = await fetch(url, {
-        headers: { "User-Agent": "DiscordBot/Orbital" },
+        headers: { "User-Agent": `${BOT_NAME} Discord bot` },
         signal: AbortSignal.timeout(5000)
     });
     if (!res.ok) {
@@ -357,3 +357,4 @@ module.exports = {
     SR_DEFAULTS,
     ABJ_CATEGORIES
 };
+
