@@ -163,6 +163,10 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
 
     const hasContent = content && content !== "No content available.";
     const hasGallery = gallery && gallery.length > 0;
+    // This is used by both the media gallery and its overflow button.
+    const galleryLimit = hasGallery
+        ? (gallery.length >= 9 ? 9 : gallery.length >= 6 ? 6 : gallery.length >= 4 ? 4 : 1)
+        : 0;
 
     const isOnlyGalleryHeader = hasContent && content.trim() === "## Gallery";
     const shouldShowTextSection = hasContent && !(isOnlyGalleryHeader && hasGallery);
@@ -185,7 +189,6 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
 
         if (hasGallery) {
             const mediaGallery = new MediaGalleryBuilder();
-            const galleryLimit = gallery.length >= 9 ? 9 : gallery.length >= 6 ? 6 : gallery.length >= 4 ? 4 : 1;
             gallery.slice(0, galleryLimit).forEach(item => {
                 const galleryItem = new MediaGalleryItemBuilder().setURL(item.url);
                 if (item.caption) {

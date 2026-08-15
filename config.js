@@ -28,6 +28,9 @@ const WIKIS = {
     }
 };
 
+// IDs may be either Discord channel IDs or category IDs. The resolver checks
+// the current channel first, then its parent/category, so a channel entry
+// applies only to that channel while a category entry applies to its channels.
 const CATEGORY_WIKI_MAP = {
     "1286781988669231166": "super-blox-64",
     "1389381096436793484": "superstar-racers",

@@ -36,7 +36,8 @@ const prefixPattern = Object.values(WIKIS).map(w => w.prefix).join('|');
 
 const syntaxRegex = new RegExp(
     `\\{\\{(?:(${prefixPattern}):)?([^{}|]+)(?:\\|[^{}]*)?\\}\\}|` +
-    `\\[\\[(?:(${prefixPattern}):)?([^\\]|]+)(?:\\|[^[\\]]*)?\\]\\]`
+    `\\[\\[(?:(${prefixPattern}):)?([^\\]|]+)(?:\\|[^[\\]]*)?\\]\\]`,
+    "i"
 );
 
 // -------------------- CLIENT SETUP --------------------
@@ -76,16 +77,21 @@ function getWikiAndPage(messageContent, channel) {
 
     let wikiConfig = null;
     if (prefix) {
-        wikiConfig = WIKIS[PREFIX_WIKI_MAP[prefix]];
+        // Explicit prefixes override the wiki configured for this channel.
+        wikiConfig = WIKIS[PREFIX_WIKI_MAP[prefix.toLowerCase()]];
     } else {
-        const channelIds = [
+        // The same config map supports both channel-specific and category-wide
+        // defaults. Put the channel first so a channel override wins over its
+        // parent category.
+        const channelAndCategoryIds = [
+            channel?.id,
             channel?.parentId,
             channel?.parent?.id,
             channel?.parent?.parentId,
             channel?.parent?.parent?.id
         ].filter(Boolean).map(String);
-        const categoryId = channelIds.find(id => CATEGORY_WIKI_MAP[id]);
-        const wikiKey = CATEGORY_WIKI_MAP[categoryId] || "superstar-racers";
+        const configuredId = channelAndCategoryIds.find(id => CATEGORY_WIKI_MAP[id]);
+        const wikiKey = CATEGORY_WIKI_MAP[configuredId] || "superstar-racers";
         wikiConfig = WIKIS[wikiKey];
     }
 
