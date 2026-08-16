@@ -25,7 +25,7 @@ async function getContributionScores(wikiConfig) {
         const rows = html.split('<tr class="">');
         rows.shift(); // Remove header
 
-        let dataSummary = `## Edit leaderboard for [${wikiConfig.name} Wiki](${wikiConfig.articlePath}Special:ContributionScores) <:emoji:${wikiConfig.emoji}>\n`;
+        let dataSummary = `## Edit leaderboard for [${wikiConfig.name}](${wikiConfig.articlePath}Special:ContributionScores) <:emoji:${wikiConfig.emoji}>\n`;
         dataSummary += `-# Top 10 users over the past 7 days\n\n`;
         
         // Extract raw data into an array
