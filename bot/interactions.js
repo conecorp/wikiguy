@@ -2,13 +2,13 @@ const {
     findCanonicalTitle,
     getPageData,
     getSectionContent,
-    getRandomPage,
-    getUserProfile,
     getSectionChoices,
     linkIntroductionPageName,
-} = require("./parse_page.js");
-const { handleFileRequest } = require("./parse_file.js");
-const { handleContribScoresRequest } = require("./contribscores.js");
+} = require("../functions/page.js");
+const { getRandomPage } = require("../functions/random.js");
+const { getUserProfile } = require("../functions/user.js");
+const { handleFileRequest } = require("../functions/file.js");
+const { handleContribScoresRequest } = require("../functions/contribs.js");
 const {
     handleSpeedrunRequest,
     SB64_VARIABLES,
@@ -16,13 +16,14 @@ const {
     SR_CATEGORY_IDS,
     SR_VARIABLES,
     SR_DEFAULTS
-} = require("./speedrun.js");
+} = require("../functions/speedrun.js");
 const {
     WIKIS,
     toggleContribScore,
-    BOT_NAME
+    BOT_NAME,
+    CONTRIBSCORES_SCORE_EMOJI
 } = require("../config.js");
-const { fetch, truncateToParagraphs: truncateContentToParagraphs } = require("./utils.js");
+const { fetch, truncateToParagraphs: truncateContentToParagraphs } = require("../functions/utils.js");
 
 const {
     ContainerBuilder,
@@ -434,6 +435,13 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
 }
 
 async function handleInteraction(interaction) {
+    if (interaction.isButton() && interaction.customId === 'speedrun:help') {
+        return interaction.reply({
+            content: `In contribution score lists, <:playerpoint:${CONTRIBSCORES_SCORE_EMOJI}> is the score: unique pages edited + 2 × √(total edits − unique pages edited). ✏️ is the number of edits (revisions) counted for the selected period.`,
+            ephemeral: true
+        }).catch(() => {});
+    }
+
     if (interaction.isAutocomplete()) {
         if (interaction.commandName === 'parse' || interaction.commandName === 'wiki' || interaction.commandName === 'user') {
             const focusedOption = interaction.options.getFocused(true);

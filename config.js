@@ -28,10 +28,8 @@ const WIKIS = {
     }
 };
 
-// IDs may be either Discord channel IDs or category IDs. The resolver checks
-// the current channel first, then its parent/category, so a channel entry
-// applies only to that channel while a category entry applies to its channels.
-const CATEGORY_WIKI_MAP = {
+// Map a channel or category ID to a wiki.
+const WIKI_MAP = {
     "1286781988669231166": "super-blox-64",
     "1389381096436793484": "superstar-racers",
     "1454904248943771748": "a-blocks-journey"
@@ -40,6 +38,7 @@ const CATEGORY_WIKI_MAP = {
 const toggleContribScore = true;
 
 const SPEEDRUN_EMOJI = "1477323785366540439";
+const CONTRIBSCORES_SCORE_EMOJI = "1472433775593000961";
 
 const STATUS_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -66,9 +65,10 @@ const STATUS_OPTIONS = [
 module.exports = {
     BOT_NAME,
     WIKIS,
-    CATEGORY_WIKI_MAP,
+    WIKI_MAP,
     toggleContribScore,
     SPEEDRUN_EMOJI,
+    CONTRIBSCORES_SCORE_EMOJI,
     STATUS_INTERVAL_MS,
     STATUS_OPTIONS
 };

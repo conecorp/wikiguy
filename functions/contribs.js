@@ -1,5 +1,5 @@
 const { fetch } = require("./utils.js");
-const { BOT_NAME } = require("../config.js");
+const { BOT_NAME, CONTRIBSCORES_SCORE_EMOJI } = require("../config.js");
 
 async function getContributionScores(wikiConfig) {
     try {
@@ -25,7 +25,7 @@ async function getContributionScores(wikiConfig) {
         const rows = html.split('<tr class="">');
         rows.shift(); // Remove header
 
-        let dataSummary = `## Edit leaderboard for [${wikiConfig.name}](${wikiConfig.articlePath}Special:ContributionScores) <:emoji:${wikiConfig.emoji}>\n`;
+        let dataSummary = `## Edit leaderboard for [${wikiConfig.name}](${wikiConfig.articlePath}Special:ContributionScores)\n`;
         dataSummary += `-# Top 10 users over the past 7 days\n`;
         
         // Extract raw data into an array
@@ -49,7 +49,7 @@ async function getContributionScores(wikiConfig) {
             const paddedScore = data.score.padStart(maxScoreLength, ' ');
             const paddedEdits = data.edits.padStart(maxEditLength, ' ');
         
-            dataSummary += `${i + 1}. <:playerpoint:1472433775593000961> \`${paddedScore}\`    ✏️ \`${paddedEdits}\`    **[@${data.user}](${wikiConfig.articlePath}User:${data.user})**\n`;
+            dataSummary += `${i + 1}. <:playerpoint:${CONTRIBSCORES_SCORE_EMOJI}> \`${paddedScore}\`    ✏️ \`${paddedEdits}\`    **[@${data.user}](${wikiConfig.articlePath}User:${data.user})**\n`;
         });
 
         if (!dataSummary) return {

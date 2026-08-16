@@ -1,6 +1,7 @@
 const { fetch } = require("./utils.js");
-const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
+const { ContainerBuilder, SectionBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const { WIKIS, SPEEDRUN_EMOJI, BOT_NAME } = require("../config.js");
+const { getPageData } = require("./page.js");
 
 const SB64_CATEGORY_IDS = {
     ANY_PERCENT: 'z27jz052',
@@ -303,21 +304,27 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
         });
 
         const container = new ContainerBuilder();
-        container.addTextDisplayComponents(new TextDisplayBuilder().setContent(description));
+        const leaderboardSection = new SectionBuilder();
+        leaderboardSection.addTextDisplayComponents([new TextDisplayBuilder().setContent(description)]);
+
+        const wikiConfig = WIKIS[GAME_WIKI_MAP[gameKey]];
+        const mapPage = await getPageData(mainTitle, wikiConfig);
+        if (mapPage?.imageUrl) {
+            leaderboardSection.setThumbnailAccessory(thumbnail => thumbnail.setURL(mapPage.imageUrl));
+        }
+        container.addSectionComponents(leaderboardSection);
 
         const row = new ActionRowBuilder();
         const button = new ButtonBuilder()
-            .setLabel("View full leaderboard")
+            .setLabel("View list")
             .setStyle(ButtonStyle.Link)
             .setURL(leaderboard.weblink);
-
-        const wikiKey = GAME_WIKI_MAP[gameKey];
-        const wikiConfig = WIKIS[wikiKey];
-        if (SPEEDRUN_EMOJI || (wikiConfig && wikiConfig.emoji)) {
-            button.setEmoji(SPEEDRUN_EMOJI || wikiConfig.emoji);
-        }
-
+        if (SPEEDRUN_EMOJI) button.setEmoji(SPEEDRUN_EMOJI);
         row.addComponents(button);
+        row.addComponents(new ButtonBuilder()
+            .setCustomId("speedrun:help")
+            .setLabel("What does this mean?")
+            .setStyle(ButtonStyle.Secondary));
 
         container.addActionRowComponents(row);
 

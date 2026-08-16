@@ -14,7 +14,7 @@ const {
     SR_VARIABLES,
     SR_DEFAULTS,
     ABJ_CATEGORIES
-} = require("./speedrun.js");
+} = require("../functions/speedrun.js");
 
 const wikiChoices = Object.entries(WIKIS).map(([key, wiki]) => ({
     name: wiki.name,

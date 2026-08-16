@@ -278,129 +278,6 @@ async function getPageData(input, wikiConfig) {
     }
 }
 
-async function getRandomPage(wikiConfig) {
-    const params = new URLSearchParams({
-        action: "query",
-        format: "json",
-        list: "random",
-        rnnamespace: "0",
-        rnlimit: "1"
-    });
-    try {
-        const res = await fetch(`${wikiConfig.apiEndpoint}?${params.toString()}`, { headers: { "User-Agent": BOT_USER_AGENT } });
-        if (!res.ok) return null;
-        const json = await res.json();
-        return json.query?.random?.[0]?.title || null;
-    } catch (err) {
-        console.warn("getRandomPage failed:", err.message);
-        return null;
-    }
-}
-
-function firstValue(value, keys) {
-    if (!value || typeof value !== "object") return null;
-    for (const key of keys) {
-        if (typeof value[key] === "string" && value[key].trim()) return value[key].trim();
-    }
-    for (const child of Object.values(value)) {
-        if (child && typeof child === "object") {
-            const result = firstValue(child, keys);
-            if (result) return result;
-        }
-    }
-    return null;
-}
-
-async function getUserProfile(username, wikiConfig) {
-    const normalized = String(username).trim().replace(/^User\s*:\s*/i, "").replace(/^@/, "");
-    if (!normalized) return null;
-    const userParams = new URLSearchParams({
-        action: "query",
-        format: "json",
-        list: "users",
-        ususers: normalized,
-        usprop: "groups|editcount"
-    });
-
-    try {
-        const userRes = await fetch(`${wikiConfig.apiEndpoint}?${userParams.toString()}`, { headers: { "User-Agent": BOT_USER_AGENT } });
-        if (!userRes.ok) return null;
-        const userJson = await userRes.json();
-        const user = userJson.query?.users?.[0];
-        if (!user || user.invalid !== undefined || user.userid === 0) return null;
-
-        let avatarUrl = null;
-        try {
-            const profilePageUrl = `${wikiConfig.articlePath}User:${encodeURIComponent(normalized.replace(/ /g, "_"))}`;
-            const profilePageRes = await fetch(profilePageUrl, { headers: { "User-Agent": BOT_USER_AGENT } });
-            if (profilePageRes.ok) {
-                const $profile = cheerio.load(await profilePageRes.text());
-                avatarUrl = $profile("img.profile-avatar-image").first().attr("src") || null;
-                if (avatarUrl?.startsWith("//")) avatarUrl = `https:${avatarUrl}`;
-                else if (avatarUrl?.startsWith("/")) avatarUrl = new URL(avatarUrl, wikiConfig.baseUrl).href;
-            }
-        } catch (err) {
-            console.warn("Failed to fetch profile avatar:", err.message);
-        }
-        const page = await getPageData(`User:${normalized}`, wikiConfig);
-        const profileUrl = `${wikiConfig.articlePath}User:${normalized.replace(/ /g, "_")}`;
-        const fallbackGroupLabels = {
-            bureaucrat: "Bureaucrat",
-            "interface-admin": "Interface administrator",
-            sysop: "Administrator",
-            autoconfirmed: "Autoconfirmed",
-            confirmed: "Confirmed",
-            bot: "Bot"
-        };
-        const visibleGroups = (Array.isArray(user.groups) ? user.groups : [])
-            .filter(group => !["*", "user"].includes(group));
-        const messageNames = visibleGroups.map(group => `group-${group}-member`).join("|");
-        let wikiGroupLabels = {};
-        if (messageNames) {
-            try {
-                const labelParams = new URLSearchParams({
-                    action: "query",
-                    format: "json",
-                    meta: "allmessages",
-                    ammessages: messageNames,
-                    amlang: "content"
-                });
-                const labelRes = await fetch(`${wikiConfig.apiEndpoint}?${labelParams.toString()}`, { headers: { "User-Agent": BOT_USER_AGENT } });
-                const messages = (await labelRes.json()).query?.allmessages || [];
-                wikiGroupLabels = Object.fromEntries(messages
-                    .filter(message => message['*'] && !message['*'].includes("⧼"))
-                    .map(message => [message.name, message['*']]));
-            } catch (err) {
-                console.warn("Failed to fetch on-wiki group labels:", err.message);
-            }
-        }
-        const cleanGroupLabel = label => String(label)
-            .replace(/\{\{\s*GENDER\s*:\s*[^|}]+\|([^{}]*)\}\}/gi, "$1")
-            .replace(/\{\{[^{}]*\}\}/g, "")
-            .trim()
-            .replace(/[-_]+/g, " ")
-            .toLowerCase();
-        const groups = visibleGroups.map(group => cleanGroupLabel(
-            wikiGroupLabels[`group-${group}-member`] || fallbackGroupLabels[group] || group
-        )).map((group, index) => index === 0
-            ? group.charAt(0).toUpperCase() + group.slice(1)
-            : group);
-
-        return {
-            username: user.name || normalized,
-            groups: [...new Set(groups)],
-            editCount: Number.isFinite(Number(user.editcount)) ? Number(user.editcount) : null,
-            avatarUrl,
-            profileUrl,
-            contribsUrl: `${wikiConfig.articlePath}Special:Contributions/${encodeURIComponent(user.name || normalized)}`,
-            content: page?.extract || ""
-        };
-    } catch (err) {
-        console.warn("getUserProfile failed:", err.message);
-        return null;
-    }
-}
-
 async function getSectionChoices(pageTitle, prefix, wikiConfig) {
     if (!pageTitle || !wikiConfig) return [];
     const canonical = await findCanonicalTitle(pageTitle, wikiConfig) || pageTitle;
@@ -686,8 +563,6 @@ module.exports = {
     getWikiContent, 
     getSectionContent, 
     getLeadSection, 
-    getRandomPage,
-    getUserProfile,
     getSectionChoices,
     parseWikiLinks, 
     parseTemplates,

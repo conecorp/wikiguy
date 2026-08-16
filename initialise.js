@@ -1,14 +1,14 @@
 require("dotenv").config();
 
-const { setRandomStatus } = require("./functions/presence.js");
-const { commands } = require("./functions/commands.js");
+const { setRandomStatus } = require("./bot/presence.js");
+const { commands } = require("./bot/commands.js");
 const { 
     handleInteraction,
     handleUserRequest,
     responseMap,
     botToAuthorMap,
     pruneMap
-} = require("./functions/interactions.js");
+} = require("./bot/interactions.js");
 
 const {
     Client,
@@ -18,7 +18,7 @@ const {
 
 const {
     WIKIS,
-    CATEGORY_WIKI_MAP,
+    WIKI_MAP,
     STATUS_INTERVAL_MS
 } = require("./config.js");
 
@@ -90,8 +90,8 @@ function getWikiAndPage(messageContent, channel) {
             channel?.parent?.parentId,
             channel?.parent?.parent?.id
         ].filter(Boolean).map(String);
-        const configuredId = channelAndCategoryIds.find(id => CATEGORY_WIKI_MAP[id]);
-        const wikiKey = CATEGORY_WIKI_MAP[configuredId] || "superstar-racers";
+        const configuredId = channelAndCategoryIds.find(id => WIKI_MAP[id]);
+        const wikiKey = WIKI_MAP[configuredId] || "superstar-racers";
         wikiConfig = WIKIS[wikiKey];
     }
 
