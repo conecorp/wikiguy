@@ -435,9 +435,9 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
 }
 
 async function handleInteraction(interaction) {
-    if (interaction.isButton() && interaction.customId === 'speedrun:help') {
+    if (interaction.isButton() && interaction.customId === 'contribs:help') {
         return interaction.reply({
-            content: `In contribution score lists, <:playerpoint:${CONTRIBSCORES_SCORE_EMOJI}> is the score: unique pages edited + 2 × √(total edits − unique pages edited). ✏️ is the number of edits (revisions) counted for the selected period.`,
+            content: `In contribution score lists, <:playerpoint:${CONTRIBSCORES_SCORE_EMOJI}> is the score: \`unique pages edited + 2 × √(total edits − unique pages edited)\`. ✏️ is the number of edits (revisions) counted for the selected period.`,
             ephemeral: true
         }).catch(() => {});
     }

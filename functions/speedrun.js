@@ -321,10 +321,6 @@ async function handleSpeedrunRequest(interaction, gameKey, categoryId, levelId =
             .setURL(leaderboard.weblink);
         if (SPEEDRUN_EMOJI) button.setEmoji(SPEEDRUN_EMOJI);
         row.addComponents(button);
-        row.addComponents(new ButtonBuilder()
-            .setCustomId("speedrun:help")
-            .setLabel("What does this mean?")
-            .setStyle(ButtonStyle.Secondary));
 
         container.addActionRowComponents(row);
 

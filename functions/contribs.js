@@ -1,5 +1,6 @@
 const { fetch } = require("./utils.js");
 const { BOT_NAME, CONTRIBSCORES_SCORE_EMOJI } = require("../config.js");
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
 async function getContributionScores(wikiConfig) {
     try {
@@ -88,6 +89,12 @@ async function handleContribScoresRequest(interaction, { toggleContribScore, WIK
             await interaction.editReply({ content: result.error });
         } else {
             const container = buildPageEmbed(result.title, result.result, null, wikiConfig);
+            container.addActionRowComponents(new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId("contribs:help")
+                    .setLabel("What does this mean?")
+                    .setStyle(ButtonStyle.Secondary)
+            ));
             const response = await interaction.editReply({
                 components: [container],
                 flags: MessageFlags.IsComponentsV2
