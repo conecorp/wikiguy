@@ -35,7 +35,15 @@ const WIKI_MAP = {
     "1454904248943771748": "a-blocks-journey"
 };
 
-const toggleContribScore = true;
+// Enable or disable slash commands. Disabled commands are not registered with Discord.
+const COMMANDS = {
+    speedrun: true,
+    contribs: true,
+    wiki: true,
+    parse: true,
+    user: true,
+    random: true,
+};
 
 const SPEEDRUN_EMOJI = "1477323785366540439";
 const CONTRIBSCORES_SCORE_EMOJI = "1472433775593000961";
@@ -66,7 +74,7 @@ module.exports = {
     BOT_NAME,
     WIKIS,
     WIKI_MAP,
-    toggleContribScore,
+    COMMANDS,
     SPEEDRUN_EMOJI,
     CONTRIBSCORES_SCORE_EMOJI,
     STATUS_INTERVAL_MS,

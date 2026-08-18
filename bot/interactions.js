@@ -19,7 +19,7 @@ const {
 } = require("../functions/speedrun.js");
 const {
     WIKIS,
-    toggleContribScore,
+    COMMANDS,
     BOT_NAME,
     CONTRIBSCORES_SCORE_EMOJI
 } = require("../config.js");
@@ -435,6 +435,10 @@ async function handleUserRequest(wikiConfig, rawPageName, messageOrInteraction, 
 }
 
 async function handleInteraction(interaction) {
+    if (interaction.isCommand() && COMMANDS[interaction.commandName] === false) {
+        return interaction.reply({ content: 'This command is currently disabled.', ephemeral: true }).catch(() => {});
+    }
+
     if (interaction.isButton() && interaction.customId === 'contribs:help') {
         return interaction.reply({
             content: `In contribution score lists, <:playerpoint:${CONTRIBSCORES_SCORE_EMOJI}> is the score: \`unique pages edited + 2 × √(total edits − unique pages edited)\`. ✏️ is the number of edits (revisions) counted for the selected period.`,

@@ -1,4 +1,4 @@
-const { WIKIS } = require("../config.js");
+const { WIKIS, COMMANDS } = require("../config.js");
 const {
     SB64_CATEGORIES,
     SB64_CHARACTER_CHOICES,
@@ -21,7 +21,7 @@ const wikiChoices = Object.entries(WIKIS).map(([key, wiki]) => ({
     value: key
 }));
 
-const commands = [
+const allCommands = [
     {
         name: 'speedrun',
         description: 'View speedrun leaderboards',
@@ -213,6 +213,8 @@ const commands = [
         ]
     }
 ];
+
+const commands = allCommands.filter(command => COMMANDS[command.name] !== false);
 
 module.exports = {
     commands,

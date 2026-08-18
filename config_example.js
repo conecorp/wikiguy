@@ -17,9 +17,16 @@ const WIKI_MAP = {
     "DISCORD_CHANNEL_OR_CATEGORY_ID": "example-wiki"
 };
 
-const toggleContribScore = true;
+const COMMANDS = {
+    speedrun: true,
+    contribs: true,
+    wiki: true,
+    parse: true,
+    user: true,
+    random: true,
+};
 const CONTRIBSCORES_SCORE_EMOJI = "DISCORD_EMOJI_ID";
 const STATUS_INTERVAL_MS = 5 * 60 * 1000;
 const STATUS_OPTIONS = [{ type: 4, text: "your wiki" }];
 
-module.exports = { BOT_NAME, WIKIS, WIKI_MAP, toggleContribScore, CONTRIBSCORES_SCORE_EMOJI, STATUS_INTERVAL_MS, STATUS_OPTIONS };
+module.exports = { BOT_NAME, WIKIS, WIKI_MAP, COMMANDS, CONTRIBSCORES_SCORE_EMOJI, STATUS_INTERVAL_MS, STATUS_OPTIONS };
