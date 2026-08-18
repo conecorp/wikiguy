@@ -1,7 +1,9 @@
+<p align="center">
+  <img src="https://files.catbox.moe/bbp2yn.png" width="500" alt="banner">
+</p>
+
 <h3 align="center">the all-in-one bot for <a href="https://conecorp.cc">CONECORP</a> wikis</h3>
 
-![](https://files.catbox.moe/pv7pca.png)
-<br>
 <p align="center">
   <a href="https://discord.com/oauth2/authorize?client_id=1472272697798037524">Add to server</a>
 </p>
