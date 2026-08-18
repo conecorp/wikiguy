@@ -35,6 +35,8 @@ const WIKI_MAP = {
     "1454904248943771748": "a-blocks-journey"
 };
 
+const DEFAULT_WIKI = "superstar-racers";
+
 // Enable or disable slash commands. Disabled commands are not registered with Discord.
 const COMMANDS = {
     speedrun: true,
@@ -74,6 +76,7 @@ module.exports = {
     BOT_NAME,
     WIKIS,
     WIKI_MAP,
+    DEFAULT_WIKI,
     COMMANDS,
     SPEEDRUN_EMOJI,
     CONTRIBSCORES_SCORE_EMOJI,

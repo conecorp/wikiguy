@@ -19,6 +19,7 @@ const {
 const {
     WIKIS,
     WIKI_MAP,
+    DEFAULT_WIKI,
     STATUS_INTERVAL_MS
 } = require("./config.js");
 
@@ -100,7 +101,7 @@ function getWikiAndPage(messageContent, channel) {
         // no WIKI_MAP export yet. The default wiki still handles the message.
         const wikiMap = WIKI_MAP || {};
         const configuredId = channelAndCategoryIds.find(id => wikiMap[id]);
-        const wikiKey = wikiMap[configuredId] || "superstar-racers";
+        const wikiKey = wikiMap[configuredId] || DEFAULT_WIKI;
         wikiConfig = WIKIS[wikiKey];
     }
 
