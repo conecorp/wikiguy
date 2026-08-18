@@ -226,7 +226,7 @@ function buildPageEmbed(title, content, imageUrl, wikiConfig, gallery = null, bu
 
             const row = new ActionRowBuilder();
             const btn = new ButtonBuilder()
-                .setLabel(String(title).slice(0, 80))
+                .setLabel((title === "Special:ContributionScores" ? "View list" : String(title)).slice(0, 80))
                 .setStyle(ButtonStyle.Link)
                 .setURL(pageUrl);
 

@@ -62,6 +62,35 @@ function linkIntroductionPageName(content, pageTitle, wikiConfig) {
     return firstParagraph.slice(0, start) + linked + firstParagraph.slice(end) + content.slice(firstParagraph.length);
 }
 
+function cleanSectionName(sectionName) {
+    return cheerio.load(`<span>${sectionName || ""}</span>`).text()
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function normalizeSectionName(sectionName) {
+    return cleanSectionName(sectionName).toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function levenshteinDistance(left, right) {
+    const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+
+    for (let row = 1; row <= left.length; row++) {
+        let diagonal = previous[0];
+        previous[0] = row;
+
+        for (let column = 1; column <= right.length; column++) {
+            const above = previous[column];
+            previous[column] = left[row - 1] === right[column - 1]
+                ? diagonal
+                : Math.min(diagonal, previous[column - 1], above) + 1;
+            diagonal = above;
+        }
+    }
+
+    return previous[right.length];
+}
+
 function htmlToMarkdown(html, baseUrl, $existing = null) {
     if (!html && !$existing) return "";
     const $ = $existing || cheerio.load(html);
@@ -347,15 +376,37 @@ async function getSectionIndex(pageTitle, sectionName, wikiConfig) {
         const sections = json.parse?.sections || [];
         if (!sections.length) return null;
 
-        const match = sections.find(
-            s => s.line.replace(/<[^>]*>?/gm, "").toLowerCase() === sectionName.toLowerCase()
-        );
+        const requested = normalizeSectionName(sectionName);
+        if (!requested) return null;
+
+        const sectionData = sections.map(section => ({
+            section,
+            name: cleanSectionName(section.line),
+            normalized: normalizeSectionName(section.line)
+        }));
+
+        const exactMatch = sectionData.find(item => item.normalized === requested);
+        let match = exactMatch;
+
+        if (!match) {
+            const closest = sectionData
+                .map(item => {
+                    const distance = levenshteinDistance(requested, item.normalized);
+                    const similarity = 1 - distance / Math.max(requested.length, item.normalized.length, 1);
+                    const related = item.normalized.includes(requested) || requested.includes(item.normalized);
+                    return { ...item, score: related ? Math.max(similarity, 0.75) : similarity };
+                })
+                .sort((left, right) => right.score - left.score)[0];
+
+            // Avoid returning an unrelated section for a completely invalid fragment.
+            if (closest && closest.score >= 0.45) match = closest;
+        }
 
         if (!match) return null;
 
         return {
-            index: match.index,
-            line: match.line.replace(/<[^>]*>?/gm, "")
+            index: match.section.index,
+            line: match.name
         };
     } catch (err) {
         console.error(`Failed to fetch section index for "${sectionName}" in "${pageTitle}":`, err.message);
@@ -416,6 +467,7 @@ async function getSectionContent(pageTitle, sectionName, wikiConfig) {
         return {
             content: htmlToMarkdown(null, wikiConfig.baseUrl, $),
             displayTitle: sectionInfo.line,
+            sectionName: sectionInfo.line,
             gallery: galleryItems.length > 0 ? galleryItems : null
         };
     } catch (err) {
@@ -523,9 +575,11 @@ async function parseTemplates(text, wikiConfig) {
         }
 
         let wikiText = null;
+        let resolvedFragment = fragment;
         try {
             if (fragment) {
                 wikiText = await getSectionContent(pageOnly, fragment, wikiConfig);
+                if (wikiText?.sectionName) resolvedFragment = wikiText.sectionName;
             } else {
                 wikiText = await getLeadSection(pageOnly, wikiConfig);
             }
@@ -537,7 +591,7 @@ async function parseTemplates(text, wikiConfig) {
 
         if (actualText) {
             const parts = pageOnly.split(':').map(seg => encodeURIComponent(seg.replace(/ /g, "_")));
-            const anchor = fragment ? `#${encodeURIComponent(fragment.replace(/ /g, "_"))}` : '';
+            const anchor = resolvedFragment ? `#${encodeURIComponent(resolvedFragment.replace(/ /g, "_"))}` : '';
             const link = `<${wikiConfig.articlePath}${parts.join(':')}${anchor}>`;
 
             replacement = `**${templateName}** → ${truncateContentToParagraphs(actualText)}\n${link}`;
