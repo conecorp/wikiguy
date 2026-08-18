@@ -1,3 +1,3 @@
 require('dotenv').config();
-require("./initialise")
-require("./bot/server")
+require("./initialise");
+require("./bot/server");
